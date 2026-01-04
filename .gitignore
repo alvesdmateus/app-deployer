@@ -1,0 +1,86 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Go workspace file
+go.work
+
+# Build artifacts
+/bin/
+/dist/
+/build/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Configuration files with secrets
+config.local.yaml
+config.*.local.yaml
+
+# Pulumi state (should be in cloud backend)
+Pulumi.*.yaml
+.pulumi/
+
+# Terraform state (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Container registry credentials
+docker-config.json
+.dockerconfigjson
+
+# Cloud provider credentials
+gcloud/
+.gcp/
+.aws/
+.azure/
+
+# Test cache
+.cache/
+
+# Dependencies
+vendor/
+node_modules/
+
+# Generated files
+*.pb.go
+*.swagger.json
+
+# Local development
+docker-compose.override.yml
