@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(go mod init:*)"
+      "Bash(go mod tidy:*)",
+      "Bash(go version:*)",
+      "Bash(make:*)",
+      "Bash(go mod init:*)",
+      "Bash(go get:*)"
     ]
   }
 }
