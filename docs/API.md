@@ -240,6 +240,143 @@ GET /api/v1/deployments/{deployment_id}/builds/latest
 }
 ```
 
+## Source Code Analysis
+
+### Analyze Source Code
+
+Analyze source code from a local path to detect language, framework, and dependencies.
+
+```http
+POST /api/v1/analyze
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "path": "/path/to/source/code"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "language": "nodejs",
+  "framework": "express",
+  "build_tool": "npm",
+  "runtime": "node:18.x",
+  "dependencies": {
+    "express": "^4.18.0",
+    "body-parser": "^1.20.0"
+  },
+  "dev_dependencies": {
+    "nodemon": "^2.0.0"
+  },
+  "start_command": "npm start",
+  "build_command": "npm install && npm run build",
+  "port": 3000,
+  "has_dockerfile": false,
+  "files": ["package.json", "index.js", "routes/"],
+  "confidence": 0.95
+}
+```
+
+### Upload and Analyze
+
+Upload source code files and analyze them.
+
+```http
+POST /api/v1/analyze/upload
+Content-Type: multipart/form-data
+```
+
+**Form Data:**
+- `source`: Source code file or archive (zip, tar.gz)
+
+**Response:** `200 OK`
+```json
+{
+  "language": "python",
+  "framework": "flask",
+  "build_tool": "pip",
+  "runtime": "python:3.11",
+  "dependencies": {
+    "flask": "2.0.1",
+    "requests": "2.26.0"
+  },
+  "start_command": "python app.py",
+  "build_command": "pip install -r requirements.txt",
+  "port": 5000,
+  "has_dockerfile": false,
+  "files": ["app.py", "requirements.txt"],
+  "confidence": 0.95
+}
+```
+
+### Get Supported Languages
+
+Get a list of supported programming languages and frameworks.
+
+```http
+GET /api/v1/analyze/languages
+```
+
+**Response:** `200 OK`
+```json
+{
+  "languages": [
+    {
+      "id": "go",
+      "name": "Go",
+      "frameworks": ["gin", "echo", "chi", "fiber"]
+    },
+    {
+      "id": "nodejs",
+      "name": "Node.js",
+      "frameworks": ["express", "nestjs", "nextjs", "koa", "fastify"]
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "frameworks": ["flask", "django", "fastapi"]
+    },
+    {
+      "id": "java",
+      "name": "Java",
+      "frameworks": ["springboot", "quarkus"]
+    }
+  ]
+}
+```
+
+### Supported Languages and Frameworks
+
+#### Go
+- **Frameworks**: Gin, Echo, Chi, Fiber
+- **Build Tool**: go
+- **Default Port**: 8080
+
+#### Node.js
+- **Frameworks**: Express, NestJS, Next.js, Koa, Fastify
+- **Build Tools**: npm, yarn, pnpm
+- **Default Port**: 3000
+
+#### Python
+- **Frameworks**: Flask, Django, FastAPI
+- **Build Tools**: pip, poetry
+- **Default Port**: 5000 (Flask), 8000 (Django)
+
+#### Java
+- **Frameworks**: Spring Boot, Quarkus
+- **Build Tools**: Maven, Gradle
+- **Default Port**: 8080
+
+#### Others
+- Rust (Cargo)
+- Ruby (Bundler)
+- PHP (Composer)
+- .NET
+
 ## Error Responses
 
 All endpoints may return error responses in the following format:

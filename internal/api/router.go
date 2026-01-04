@@ -17,6 +17,7 @@ type Server struct {
 	deploymentHandler    *DeploymentHandler
 	infrastructureHandler *InfrastructureHandler
 	buildHandler         *BuildHandler
+	analyzerHandler      *AnalyzerHandler
 }
 
 // NewServer creates a new API server
@@ -29,6 +30,7 @@ func NewServer(db *gorm.DB) *Server {
 		deploymentHandler:    NewDeploymentHandler(repo),
 		infrastructureHandler: NewInfrastructureHandler(repo),
 		buildHandler:         NewBuildHandler(repo),
+		analyzerHandler:      NewAnalyzerHandler(),
 	}
 
 	s.setupRoutes()
@@ -66,6 +68,13 @@ func (s *Server) setupRoutes() {
 				// Build sub-routes
 				r.Get("/builds/latest", s.buildHandler.GetLatestBuild)
 			})
+		})
+
+		// Analyzer routes
+		r.Route("/analyze", func(r chi.Router) {
+			r.Post("/", s.analyzerHandler.AnalyzeSourceCode)
+			r.Post("/upload", s.analyzerHandler.UploadAndAnalyze)
+			r.Get("/languages", s.analyzerHandler.GetSupportedLanguages)
 		})
 	})
 }
