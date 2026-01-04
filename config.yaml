@@ -1,0 +1,40 @@
+# app-deployer configuration file
+# Environment variables will override these values
+
+server:
+  port: "3000"
+  read_timeout: 10s
+  write_timeout: 10s
+  log_level: info
+
+database:
+  host: localhost
+  port: 5432
+  user: deployer
+  password: deployer_dev_password
+  dbname: app_deployer
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+
+redis:
+  url: localhost:6379
+  password: ""
+  db: 0
+
+platform:
+  default_cloud: gcp
+  default_region: us-central1
+
+registry:
+  type: artifact-registry  # artifact-registry, harbor, ecr, acr
+  project: ""  # Set your GCP project ID
+  location: us-central1
+  url: ""
+
+limits:
+  max_deployments_per_user: 10
+  max_cpu_per_deployment: 4000m
+  max_memory_per_deployment: 8Gi
+  max_build_time: 30m
