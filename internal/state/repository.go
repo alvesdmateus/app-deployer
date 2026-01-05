@@ -159,6 +159,21 @@ func (r *Repository) UpdateBuild(ctx context.Context, build *Build) error {
 	return nil
 }
 
+// GetBuildByID retrieves a build by its ID
+func (r *Repository) GetBuildByID(ctx context.Context, buildID uuid.UUID) (*Build, error) {
+	var build Build
+
+	if err := r.db.WithContext(ctx).
+		First(&build, "id = ?", buildID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Return nil, nil for not found instead of error
+		}
+		return nil, fmt.Errorf("failed to get build: %w", err)
+	}
+
+	return &build, nil
+}
+
 // GetLatestBuild retrieves the most recent build for a deployment
 func (r *Repository) GetLatestBuild(ctx context.Context, deploymentID uuid.UUID) (*Build, error) {
 	var build Build

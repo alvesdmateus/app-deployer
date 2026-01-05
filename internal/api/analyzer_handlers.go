@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mateus/app-deployer/internal/analyzer"
+	"github.com/alvesdmateus/app-deployer/internal/analyzer"
 	"github.com/rs/zerolog/log"
 )
 

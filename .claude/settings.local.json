@@ -5,7 +5,13 @@
       "Bash(go version:*)",
       "Bash(make:*)",
       "Bash(go mod init:*)",
-      "Bash(go get:*)"
+      "Bash(go get:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(go build:*)",
+      "Bash(go doc:*)",
+      "Bash(go test:*)"
     ]
   }
 }

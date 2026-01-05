@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/mateus/app-deployer/internal/state"
+	"github.com/alvesdmateus/app-deployer/internal/state"
 	"github.com/rs/zerolog/log"
 )
 
