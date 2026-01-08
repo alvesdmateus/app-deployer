@@ -32,11 +32,44 @@ type Deployment struct {
 type Infrastructure struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey"`
 	DeploymentID uuid.UUID `gorm:"type:uuid;not null;index"`
+
+	// Basic cluster info
 	ClusterName  string    `gorm:"not null"`
 	Namespace    string    `gorm:"not null"`
 	ServiceName  string
-	Status       string    `gorm:"not null"` // PROVISIONING, READY, FAILED
+	Status       string    `gorm:"not null"` // PROVISIONING, READY, FAILED, DESTROYING
 	Config       string    `gorm:"type:jsonb"`
+
+	// Pulumi state tracking
+	PulumiStackName   string `gorm:"index"` // Unique stack name for idempotency
+	PulumiProjectName string
+	PulumiBackendURL  string
+
+	// GCP resources
+	VPCName           string
+	VPCNetwork        string // Full VPC network path
+	SubnetName        string
+	SubnetCIDR        string
+	RouterName        string
+	NATName           string
+
+	// GKE cluster details
+	ClusterEndpoint     string
+	ClusterCACert       string `gorm:"type:text"` // Base64 encoded CA cert
+	ClusterLocation     string                    // GCP region/zone
+	NodePoolName        string
+	NodeCount           int    `gorm:"default:2"`
+	ServiceAccountEmail string
+
+	// Kubernetes deployment details (from deployer phase)
+	KubeNamespace   string // K8s namespace
+	HelmReleaseName string // Helm release name
+	ExternalIP      string // LoadBalancer external IP
+
+	// Error tracking
+	LastError    string `gorm:"type:text"` // Last error message
+	ProvisionLog string `gorm:"type:text"` // Provision operation logs
+
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`

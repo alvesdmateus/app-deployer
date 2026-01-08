@@ -19,18 +19,18 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 ### Tasks
 
 #### Project Initialization
-- [ ] Initialize Go module (`go mod init github.com/yourusername/app-deployer`)
-- [ ] Create repository structure (see ARCHITECTURE.md)
-- [ ] Set up Git hooks (pre-commit for linting, formatting)
-- [ ] Configure editorconfig and linting rules (golangci-lint)
+- [x] Initialize Go module (`go mod init github.com/yourusername/app-deployer`)
+- [x] Create repository structure (see ARCHITECTURE.md)
+- [x] Set up Git hooks (pre-commit for linting, formatting)
+- [x] Configure editorconfig and linting rules (golangci-lint)
 
 #### Development Environment
-- [ ] Create docker-compose.yml for local development
+- [x] Create docker-compose.yml for local development
   - PostgreSQL database
   - Redis for job queue
   - Harbor registry (or use Docker Hub for MVP)
   - Localstack for AWS emulation (optional)
-- [ ] Write Makefile with common commands
+- [x] Write Makefile with common commands
   - `make build` - Build all binaries
   - `make test` - Run tests
   - `make dev` - Start local development environment
@@ -38,7 +38,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - `make migrate` - Run database migrations
 
 #### CI/CD Setup
-- [ ] Create GitHub Actions workflows
+- [x] Create GitHub Actions workflows
   - `.github/workflows/test.yml` - Run tests on PR
   - `.github/workflows/lint.yml` - Linting and formatting checks
   - `.github/workflows/build.yml` - Build and push Docker images
@@ -46,7 +46,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [ ] Configure dependabot for dependency updates
 
 #### Documentation
-- [ ] Update README.md with project overview and setup instructions
+- [x] Update README.md with project overview and setup instructions
 - [ ] Create CONTRIBUTING.md with development guidelines
 - [ ] Set up documentation site structure (MkDocs or similar)
 
@@ -69,54 +69,54 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 ### Tasks
 
 #### 1.1 Database & State Management (Week 3)
-- [ ] Design database schema (PostgreSQL)
-- [ ] Set up database migrations (golang-migrate or GORM auto-migrate)
-- [ ] Implement state manager package
+- [x] Design database schema (PostgreSQL)
+- [x] Set up database migrations (golang-migrate or GORM auto-migrate)
+- [x] Implement state manager package
   - Deployment CRUD operations
   - Infrastructure state tracking
   - Build history
-- [ ] Write unit tests for state manager
-- [ ] Create database seeding for local development
+- [x] Write unit tests for state manager
+- [x] Create database seeding for local development
 
 **Files**: `internal/state/models.go`, `internal/state/repository.go`
 
 #### 1.2 API Layer (Week 3)
-- [ ] Set up Fiber/Echo HTTP framework
-- [ ] Implement core endpoints
+- [x] Set up Fiber/Echo HTTP framework
+- [x] Implement core endpoints
   - `POST /deployments` - Create deployment
   - `GET /deployments/:id` - Get deployment status
   - `GET /deployments/:id/logs` - Stream logs (basic polling, not WebSocket yet)
   - `DELETE /deployments/:id` - Delete deployment
-- [ ] Add basic authentication (API key in header)
-- [ ] Request validation middleware
-- [ ] Error handling middleware
+- [x] Add basic authentication (API key in header)
+- [x] Request validation middleware
+- [x] Error handling middleware
 - [ ] OpenAPI/Swagger documentation generation
 - [ ] Write API integration tests
 
 **Files**: `cmd/api/main.go`, `internal/api/handlers/`, `internal/api/middleware/`
 
 #### 1.3 Repository Analyzer (Week 4)
-- [ ] Implement Git clone functionality (go-git library)
-- [ ] Create language detection logic
+- [x] Implement Git clone functionality (go-git library)
+- [x] Create language detection logic
   - Node.js (package.json)
   - Python (requirements.txt, pyproject.toml)
   - Go (go.mod)
-- [ ] Parse package files to extract metadata
-- [ ] Determine default ports by framework
-- [ ] Estimate resource requirements (basic heuristics)
-- [ ] Write unit tests with fixture repositories
+- [x] Parse package files to extract metadata
+- [x] Determine default ports by framework
+- [x] Estimate resource requirements (basic heuristics)
+- [x] Write unit tests with fixture repositories
 - [ ] Integration test with real GitHub repos
 
 **Files**: `internal/analyzer/analyzer.go`, `internal/analyzer/detectors/`
 
 #### 1.4 Image Builder (Week 4-5)
-- [ ] Integrate Cloud Native Buildpacks (pack CLI)
-- [ ] Implement buildpack builder selection logic
-- [ ] Add fallback to Dockerfile if present
-- [ ] Implement image tagging strategy (git-sha, latest)
-- [ ] Push images to GCP Artifact Registry (free tier) or Harbor
-- [ ] Capture and store build logs
-- [ ] Handle build failures gracefully
+- [x] Integrate Cloud Native Buildpacks (pack CLI)
+- [x] Implement buildpack builder selection logic
+- [x] Add fallback to Dockerfile if present
+- [x] Implement image tagging strategy (git-sha, latest)
+- [x] Push images to GCP Artifact Registry (free tier) or Harbor
+- [x] Capture and store build logs
+- [x] Handle build failures gracefully
 - [ ] Write integration tests with sample apps
 - [ ] Add build timeout handling (30 min max)
 
@@ -460,11 +460,34 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 | Phase | Duration | Key Deliverable | Status |
 |-------|----------|-----------------|--------|
-| **Phase 0** | Week 1-2 | Development environment setup | ⏳ Pending |
-| **Phase 1** | Week 3-6 | MVP (AWS only, single tenant) | ⏳ Pending |
+| **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
+| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (65%)** |
 | **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
+
+### Current Status Details (Phase 1)
+
+**✅ Completed:**
+- 1.1 Database & State Management (100%)
+- 1.2 API Layer (85% - missing Swagger docs & integration tests)
+- 1.3 Repository Analyzer (90% - missing integration tests with real repos)
+- 1.4 Image Builder (85% - missing integration tests & timeout handling)
+
+**🔄 In Progress:**
+- Code analysis features (current branch: `feature/code-analysis`)
+- Advanced builder strategies and registry integrations
+
+**⏳ Next Up:**
+- 1.5 Infrastructure Provisioner - GCP VPC & GKE (0%)
+- 1.6 Kubernetes Deployer - Helm charts (0%)
+- 1.7 Orchestrator - Redis job queue & worker (10% - skeleton only)
+- 1.8 MVP Testing & Validation (0%)
+
+**Recent Commits:**
+- `2469098` - production ready with advanced features
+- `1f6e2a8` - code analysis first implementation
+- `8a83099` - code implemented database and base api
 
 ---
 

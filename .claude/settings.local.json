@@ -11,7 +11,8 @@
       "Bash(find:*)",
       "Bash(go build:*)",
       "Bash(go doc:*)",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(go run:*)"
     ]
   }
 }
