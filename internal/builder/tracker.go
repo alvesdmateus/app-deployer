@@ -8,18 +8,34 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
+	"github.com/alvesdmateus/app-deployer/internal/queue"
 	"github.com/alvesdmateus/app-deployer/internal/state"
 )
 
+// Orchestrator defines the interface for enqueueing jobs
+type Orchestrator interface {
+	EnqueueProvisionJob(ctx context.Context, payload *queue.ProvisionPayload) error
+}
+
 // Tracker implements BuildTracker interface
 type Tracker struct {
-	repo *state.Repository
+	repo         *state.Repository
+	orchestrator Orchestrator
 }
 
 // NewTracker creates a new build tracker
 func NewTracker(repo *state.Repository) *Tracker {
 	return &Tracker{
-		repo: repo,
+		repo:         repo,
+		orchestrator: nil, // Optional, for backward compatibility
+	}
+}
+
+// NewTrackerWithOrchestrator creates a new build tracker with orchestrator integration
+func NewTrackerWithOrchestrator(repo *state.Repository, orchestrator Orchestrator) *Tracker {
+	return &Tracker{
+		repo:         repo,
+		orchestrator: orchestrator,
 	}
 }
 
@@ -149,13 +165,53 @@ func (t *Tracker) CompleteBuild(ctx context.Context, buildID string, result *Bui
 		return fmt.Errorf("failed to update build: %w", err)
 	}
 
-	// Update deployment status
-	// The deployment is now ready for provisioning
-	if err := t.repo.UpdateDeploymentStatus(ctx, build.DeploymentID, "PROVISIONING"); err != nil {
-		log.Warn().
-			Err(err).
+	// Get deployment for provisioning job
+	deployment, err := t.repo.GetDeploymentByID(ctx, build.DeploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to get deployment: %w", err)
+	}
+
+	// If orchestrator is configured, enqueue provision job
+	if t.orchestrator != nil {
+		log.Info().
+			Str("buildID", buildID).
 			Str("deploymentID", build.DeploymentID.String()).
-			Msg("Failed to update deployment status to PROVISIONING")
+			Msg("Enqueueing provision job")
+
+		payload := &queue.ProvisionPayload{
+			DeploymentID: build.DeploymentID.String(),
+			AppName:      deployment.AppName,
+			Version:      deployment.Version,
+			Cloud:        deployment.Cloud,
+			Region:       deployment.Region,
+			ImageTag:     result.ImageTag,
+			BuildID:      buildID,
+		}
+
+		if err := t.orchestrator.EnqueueProvisionJob(ctx, payload); err != nil {
+			log.Error().
+				Err(err).
+				Str("deploymentID", build.DeploymentID.String()).
+				Msg("Failed to enqueue provision job")
+			return fmt.Errorf("enqueue provision job: %w", err)
+		}
+
+		log.Info().
+			Str("buildID", buildID).
+			Str("deploymentID", build.DeploymentID.String()).
+			Msg("Provision job enqueued successfully")
+	} else {
+		// Fallback: Update deployment status directly (backward compatibility)
+		log.Warn().
+			Str("deploymentID", build.DeploymentID.String()).
+			Msg("No orchestrator configured, updating deployment status directly")
+
+		if err := t.repo.UpdateDeploymentStatus(ctx, build.DeploymentID, "PROVISIONING"); err != nil {
+			log.Warn().
+				Err(err).
+				Str("deploymentID", build.DeploymentID.String()).
+				Msg("Failed to update deployment status to PROVISIONING")
+		}
 	}
 
 	log.Info().

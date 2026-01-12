@@ -60,7 +60,7 @@ type DestroyPayload struct {
 
 // RollbackPayload contains data for a rollback job
 type RollbackPayload struct {
-	DeploymentID     string `json:"deployment_id"`
-	InfrastructureID string `json:"infrastructure_id"`
-	PreviousVersion  string `json:"previous_version"`
+	DeploymentID  string `json:"deployment_id"`
+	TargetVersion string `json:"target_version"`
+	TargetTag     string `json:"target_tag"`
 }

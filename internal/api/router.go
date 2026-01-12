@@ -9,6 +9,8 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/builder"
 	"github.com/alvesdmateus/app-deployer/internal/builder/registry"
 	"github.com/alvesdmateus/app-deployer/internal/builder/strategies"
+	"github.com/alvesdmateus/app-deployer/internal/orchestrator"
+	"github.com/alvesdmateus/app-deployer/internal/queue"
 	"github.com/alvesdmateus/app-deployer/internal/state"
 	"github.com/alvesdmateus/app-deployer/pkg/config"
 	"github.com/alvesdmateus/app-deployer/pkg/database"
@@ -20,6 +22,8 @@ import (
 type Server struct {
 	router                *chi.Mux
 	db                    *gorm.DB
+	redisQueue            *queue.RedisQueue
+	orchestratorClient    *orchestrator.Client
 	deploymentHandler     *DeploymentHandler
 	infrastructureHandler *InfrastructureHandler
 	buildHandler          *BuildHandler
@@ -46,7 +50,25 @@ func NewServer(db *gorm.DB) *Server {
 				Project:  "",
 				Location: "us-central1",
 			},
+			Redis: config.RedisConfig{
+				URL:      "localhost:6379",
+				Password: "",
+				DB:       0,
+			},
 		}
+	}
+
+	// Initialize Redis queue
+	redisQueue, err := queue.NewRedisQueue(cfg.Redis.URL, cfg.Redis.Password, cfg.Redis.DB)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to connect to Redis, orchestration features disabled")
+		// Continue without Redis - orchestration endpoints will return errors
+	}
+
+	// Initialize orchestrator client
+	var orchClient *orchestrator.Client
+	if redisQueue != nil {
+		orchClient = orchestrator.NewClient(redisQueue, log.Logger)
 	}
 
 	// Initialize analyzer
@@ -65,7 +87,9 @@ func NewServer(db *gorm.DB) *Server {
 	s := &Server{
 		router:                chi.NewRouter(),
 		db:                    db,
-		deploymentHandler:     NewDeploymentHandler(repo),
+		redisQueue:            redisQueue,
+		orchestratorClient:    orchClient,
+		deploymentHandler:     NewDeploymentHandler(repo, orchClient),
 		infrastructureHandler: NewInfrastructureHandler(repo),
 		buildHandler:          NewBuildHandler(repo),
 		analyzerHandler:       NewAnalyzerHandler(),
@@ -110,8 +134,10 @@ func (s *Server) setupRoutes() {
 	s.router.Use(CORSMiddleware())
 	s.router.Use(middleware.RealIP)
 
-	// Health check
+	// Health check endpoints
 	s.router.Get("/health", s.healthCheck)
+	s.router.Get("/health/live", s.livenessCheck)
+	s.router.Get("/health/ready", s.readinessCheck)
 
 	// API v1 routes
 	s.router.Route("/api/v1", func(r chi.Router) {
@@ -165,6 +191,46 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 		Status:   "ok",
 		Database: dbStatus,
 		Version:  "1.0.0",
+	}
+
+	RespondWithJSON(w, http.StatusOK, response)
+}
+
+// livenessCheck handles GET /health/live - checks if process is running
+func (s *Server) livenessCheck(w http.ResponseWriter, r *http.Request) {
+	RespondWithJSON(w, http.StatusOK, map[string]string{
+		"status": "alive",
+	})
+}
+
+// readinessCheck handles GET /health/ready - checks if service can accept traffic
+func (s *Server) readinessCheck(w http.ResponseWriter, r *http.Request) {
+	response := map[string]string{
+		"status":   "ready",
+		"database": "healthy",
+		"redis":    "healthy",
+	}
+
+	// Check database connection
+	if err := database.HealthCheck(s.db); err != nil {
+		log.Error().Err(err).Msg("Readiness check failed: database unhealthy")
+		response["status"] = "not_ready"
+		response["database"] = "unhealthy"
+		RespondWithJSON(w, http.StatusServiceUnavailable, response)
+		return
+	}
+
+	// Check Redis connection (if configured)
+	if s.redisQueue != nil {
+		if err := s.redisQueue.Ping(r.Context()); err != nil {
+			log.Error().Err(err).Msg("Readiness check failed: redis unhealthy")
+			response["status"] = "not_ready"
+			response["redis"] = "unhealthy"
+			RespondWithJSON(w, http.StatusServiceUnavailable, response)
+			return
+		}
+	} else {
+		response["redis"] = "not_configured"
 	}
 
 	RespondWithJSON(w, http.StatusOK, response)

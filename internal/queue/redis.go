@@ -123,6 +123,39 @@ func (q *RedisQueue) MarkComplete(ctx context.Context, jobID string) error {
 	return nil
 }
 
+// MarkFailed marks a job as failed and stores the error
+func (q *RedisQueue) MarkFailed(ctx context.Context, jobID string, jobErr error) error {
+	// Remove processing marker
+	processingKey := fmt.Sprintf("job:processing:%s", jobID)
+	if err := q.client.Del(ctx, processingKey).Err(); err != nil {
+		return fmt.Errorf("failed to remove processing marker: %w", err)
+	}
+
+	// Store failure information with 24-hour TTL
+	failedKey := fmt.Sprintf("job:failed:%s", jobID)
+	failureData := map[string]interface{}{
+		"job_id":     jobID,
+		"error":      jobErr.Error(),
+		"failed_at":  time.Now().Unix(),
+	}
+
+	data, err := json.Marshal(failureData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal failure data: %w", err)
+	}
+
+	if err := q.client.Set(ctx, failedKey, data, 24*time.Hour).Err(); err != nil {
+		return fmt.Errorf("failed to mark job as failed: %w", err)
+	}
+
+	log.Warn().
+		Str("jobID", jobID).
+		Err(jobErr).
+		Msg("Job marked as failed")
+
+	return nil
+}
+
 // GetProcessingJobs retrieves all jobs currently being processed
 func (q *RedisQueue) GetProcessingJobs(ctx context.Context) ([]string, error) {
 	pattern := "job:processing:*"

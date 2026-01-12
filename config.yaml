@@ -33,6 +33,23 @@ registry:
   location: us-central1
   url: ""
 
+provisioner:
+  gcp_project: ""  # Set your GCP project ID for infrastructure provisioning
+  gcp_region: us-central1
+  pulumi_backend: ""  # e.g., gs://my-pulumi-state-bucket/app-deployer
+  default_node_type: e2-small
+  default_nodes: 2
+
+deployer:
+  default_replicas: 2
+  default_port: 8080
+  helm_timeout: 5m
+  pod_timeout: 5m
+
+worker:
+  concurrency: 3  # Number of concurrent workers processing jobs
+  poll_interval: 5s
+
 limits:
   max_deployments_per_user: 10
   max_cpu_per_deployment: 4000m

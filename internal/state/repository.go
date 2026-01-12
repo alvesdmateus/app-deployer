@@ -354,3 +354,8 @@ func (r *Repository) GetRecentDeployments(ctx context.Context, limit int) ([]Dep
 
 	return deployments, nil
 }
+
+// GetDeploymentByID is an alias for GetDeployment (for API consistency)
+func (r *Repository) GetDeploymentByID(ctx context.Context, id uuid.UUID) (*Deployment, error) {
+	return r.GetDeployment(ctx, id)
+}
