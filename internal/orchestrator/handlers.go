@@ -42,6 +42,16 @@ func (w *Worker) handleProvisionJob(ctx context.Context, job *queue.Job) error {
 		Str("region", payload.Region).
 		Msg("Starting infrastructure provisioning")
 
+	// Apply defaults for infrastructure configuration
+	nodeCount := payload.NodeCount
+	if nodeCount == 0 {
+		nodeCount = 2
+	}
+	machineType := payload.MachineType
+	if machineType == "" {
+		machineType = "e2-small"
+	}
+
 	// Create provision request
 	provisionReq := &provisioner.ProvisionRequest{
 		DeploymentID: payload.DeploymentID,
@@ -50,8 +60,8 @@ func (w *Worker) handleProvisionJob(ctx context.Context, job *queue.Job) error {
 		Cloud:        payload.Cloud,
 		Region:       payload.Region,
 		Config: &provisioner.ProvisionConfig{
-			NodeCount:   2,
-			MachineType: "e2-small",
+			NodeCount:   nodeCount,
+			MachineType: machineType,
 		},
 	}
 
@@ -80,13 +90,19 @@ func (w *Worker) handleProvisionJob(ctx context.Context, job *queue.Job) error {
 		Str("namespace", result.Namespace).
 		Msg("Infrastructure provisioning completed successfully")
 
+	// Apply defaults for replicas
+	replicas := payload.Replicas
+	if replicas == 0 {
+		replicas = 2
+	}
+
 	// Enqueue deploy job
 	deployPayload := &queue.DeployPayload{
 		DeploymentID:     payload.DeploymentID,
 		InfrastructureID: result.InfrastructureID,
 		ImageTag:         payload.ImageTag,
 		Port:             deployment.Port,
-		Replicas:         2, // Default replicas
+		Replicas:         replicas,
 	}
 
 	if err := w.engine.EnqueueDeployJob(ctx, deployPayload); err != nil {

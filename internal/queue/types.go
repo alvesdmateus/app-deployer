@@ -41,6 +41,11 @@ type ProvisionPayload struct {
 	Region       string `json:"region"`
 	ImageTag     string `json:"image_tag"`
 	BuildID      string `json:"build_id"`
+
+	// Infrastructure configuration (optional, defaults applied if zero)
+	NodeCount   int    `json:"node_count,omitempty"`   // Default: 2
+	MachineType string `json:"machine_type,omitempty"` // Default: e2-small
+	Replicas    int    `json:"replicas,omitempty"`     // Default: 2
 }
 
 // DeployPayload contains data for a deploy job

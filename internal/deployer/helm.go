@@ -232,16 +232,67 @@ func (h *HelmDeployer) Destroy(ctx context.Context, req *DestroyRequest) error {
 	return nil
 }
 
-// GetStatus gets the status of a deployment
+// GetStatus gets the status of a deployment by querying Helm
 func (h *HelmDeployer) GetStatus(ctx context.Context, namespace, releaseName string) (*DeploymentStatus, error) {
-	// This would typically query Helm status
-	// For now, return a simple implementation
-	return &DeploymentStatus{
+	log.Debug().
+		Str("namespace", namespace).
+		Str("release", releaseName).
+		Msg("Getting Helm release status")
+
+	// Run helm status command
+	cmd := exec.CommandContext(ctx, "helm", "status", releaseName,
+		"-n", namespace,
+		"-o", "json",
+	)
+
+	output, err := cmd.Output()
+	if err != nil {
+		// Check if release doesn't exist
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr := string(exitErr.Stderr)
+			if strings.Contains(stderr, "not found") {
+				return &DeploymentStatus{
+					ReleaseName: releaseName,
+					Namespace:   namespace,
+					Status:      "not_found",
+					UpdatedAt:   time.Now(),
+				}, nil
+			}
+		}
+		log.Error().Err(err).Msg("Failed to get Helm status")
+		return nil, fmt.Errorf("failed to get helm status: %w", err)
+	}
+
+	// Parse JSON output
+	var helmStatus struct {
+		Name string `json:"name"`
+		Info struct {
+			Status        string    `json:"status"`
+			LastDeployed  time.Time `json:"last_deployed"`
+			Description   string    `json:"description"`
+		} `json:"info"`
+		Version int `json:"version"`
+	}
+
+	if err := yaml.Unmarshal(output, &helmStatus); err != nil {
+		log.Error().Err(err).Msg("Failed to parse Helm status output")
+		return nil, fmt.Errorf("failed to parse helm status: %w", err)
+	}
+
+	status := &DeploymentStatus{
 		ReleaseName: releaseName,
 		Namespace:   namespace,
-		Status:      "deployed",
-		UpdatedAt:   time.Now(),
-	}, nil
+		Status:      helmStatus.Info.Status,
+		Revision:    helmStatus.Version,
+		UpdatedAt:   helmStatus.Info.LastDeployed,
+	}
+
+	log.Debug().
+		Str("status", status.Status).
+		Int("revision", status.Revision).
+		Msg("Got Helm release status")
+
+	return status, nil
 }
 
 // Rollback rolls back a deployment
@@ -299,10 +350,18 @@ func (h *HelmDeployer) generateValues(req *DeployRequest, infra *state.Infrastru
 		port = h.defaultPort
 	}
 
+	// Parse image tag safely
+	imageRepo := req.ImageTag
+	imageTag := "latest"
+	if parts := strings.SplitN(req.ImageTag, ":", 2); len(parts) == 2 {
+		imageRepo = parts[0]
+		imageTag = parts[1]
+	}
+
 	values := map[string]interface{}{
 		"image": map[string]interface{}{
-			"repository": strings.Split(req.ImageTag, ":")[0],
-			"tag":        strings.Split(req.ImageTag, ":")[1],
+			"repository": imageRepo,
+			"tag":        imageTag,
 			"pullPolicy": "Always",
 		},
 		"replicaCount": replicas,
