@@ -8,11 +8,13 @@ import (
 
 // CreateDeploymentRequest represents a request to create a new deployment
 type CreateDeploymentRequest struct {
-	Name    string `json:"name"`
-	AppName string `json:"app_name"`
-	Version string `json:"version"`
-	Cloud   string `json:"cloud"`
-	Region  string `json:"region"`
+	Name     string `json:"name"`
+	AppName  string `json:"app_name"`
+	Version  string `json:"version"`
+	Cloud    string `json:"cloud"`
+	Region   string `json:"region"`
+	ImageTag string `json:"image_tag,omitempty"` // Optional: if provided, triggers immediate provisioning
+	Port     int    `json:"port,omitempty"`      // Optional: defaults to 8080
 }
 
 // UpdateDeploymentStatusRequest represents a request to update deployment status
@@ -87,4 +89,32 @@ type ListDeploymentsResponse struct {
 	Total       int                  `json:"total"`
 	Limit       int                  `json:"limit"`
 	Offset      int                  `json:"offset"`
+}
+
+// StartDeploymentRequest represents a request to start deployment (after build)
+type StartDeploymentRequest struct {
+	ImageTag string `json:"image_tag"` // Required: container image to deploy
+	Port     int    `json:"port"`      // Optional: defaults to 8080
+	Replicas int    `json:"replicas"`  // Optional: defaults to 2
+}
+
+// TriggerRollbackRequest represents a request to rollback a deployment
+type TriggerRollbackRequest struct {
+	TargetVersion string `json:"target_version"`        // Required: version to rollback to
+	TargetTag     string `json:"target_tag,omitempty"`  // Optional: specific image tag
+}
+
+// OrchestrationResponse represents a response for async orchestration operations
+type OrchestrationResponse struct {
+	DeploymentID string `json:"deployment_id"`
+	Status       string `json:"status"`
+	Message      string `json:"message"`
+}
+
+// QueueStatsResponse represents queue statistics
+type QueueStatsResponse struct {
+	Provision int64 `json:"provision"`
+	Deploy    int64 `json:"deploy"`
+	Destroy   int64 `json:"destroy"`
+	Rollback  int64 `json:"rollback"`
 }

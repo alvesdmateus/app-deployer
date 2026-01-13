@@ -152,6 +152,10 @@ func (s *Server) setupRoutes() {
 				r.Delete("/", s.deploymentHandler.DeleteDeployment)
 				r.Patch("/status", s.deploymentHandler.UpdateDeploymentStatus)
 
+				// Orchestration endpoints
+				r.Post("/deploy", s.deploymentHandler.StartDeployment)
+				r.Post("/rollback", s.deploymentHandler.TriggerRollback)
+
 				// Infrastructure sub-routes
 				r.Get("/infrastructure", s.infrastructureHandler.GetInfrastructure)
 
@@ -176,6 +180,11 @@ func (s *Server) setupRoutes() {
 				r.Get("/logs", s.builderHandler.GetBuildLogs)
 				r.Post("/cancel", s.builderHandler.CancelBuild)
 			})
+		})
+
+		// Orchestrator routes
+		r.Route("/orchestrator", func(r chi.Router) {
+			r.Get("/stats", s.deploymentHandler.GetQueueStats)
 		})
 	})
 }
