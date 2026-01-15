@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for state management
+  postgres:
+    image: postgres:16-alpine
+    container_name: app-deployer-db
+    environment:
+      POSTGRES_DB: app_deployer
+      POSTGRES_USER: deployer
+      POSTGRES_PASSWORD: deployer_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deployer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for job queue
+  redis:
+    image: redis:7-alpine
+    container_name: app-deployer-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Harbor container registry (optional - can use GCP Artifact Registry instead)
+  # Uncomment if you want to run Harbor locally for development
+  # harbor:
+  #   image: goharbor/harbor-core:v2.10.0
+  #   container_name: app-deployer-harbor
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     HARBOR_ADMIN_PASSWORD: Harbor12345
+
+  # PgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: app-deployer-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@app-deployer.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+  # Redis Commander for Redis management (optional)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: app-deployer-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
