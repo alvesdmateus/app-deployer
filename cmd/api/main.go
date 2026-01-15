@@ -1,73 +1,97 @@
 package main
 
 import (
-	"log"
+	"context"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/alvesdmateus/app-deployer/internal/api"
+	"github.com/alvesdmateus/app-deployer/pkg/config"
+	"github.com/alvesdmateus/app-deployer/pkg/database"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	// Initialize logger
-	zlog := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	zlog.Info().Msg("Starting app-deployer API server")
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
-	// Initialize Fiber app
-	app := fiber.New(fiber.Config{
-		AppName: "app-deployer API v0.1.0",
-	})
+	log.Info().Msg("Starting app-deployer API server")
 
-	// Middleware
-	app.Use(recover.New())
-	app.Use(logger.New())
-
-	// Health check endpoints
-	app.Get("/health/live", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status": "alive",
-		})
-	})
-
-	app.Get("/health/ready", func(c *fiber.Ctx) error {
-		// TODO: Check database connection, redis connection
-		return c.JSON(fiber.Map{
-			"status": "ready",
-		})
-	})
-
-	// API routes
-	api := app.Group("/api/v1")
-
-	// Deployments endpoints (placeholder)
-	api.Post("/deployments", func(c *fiber.Ctx) error {
-		return c.Status(501).JSON(fiber.Map{
-			"error": "Not implemented yet",
-		})
-	})
-
-	api.Get("/deployments/:id", func(c *fiber.Ctx) error {
-		return c.Status(501).JSON(fiber.Map{
-			"error": "Not implemented yet",
-		})
-	})
-
-	api.Delete("/deployments/:id", func(c *fiber.Ctx) error {
-		return c.Status(501).JSON(fiber.Map{
-			"error": "Not implemented yet",
-		})
-	})
-
-	// Start server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	zlog.Info().Str("port", port).Msg("API server listening")
-	if err := app.Listen(":" + port); err != nil {
-		log.Fatal(err)
+	// Set log level
+	level, err := zerolog.ParseLevel(cfg.Server.LogLevel)
+	if err != nil {
+		level = zerolog.InfoLevel
 	}
+	zerolog.SetGlobalLevel(level)
+
+	// Initialize database connection
+	dbConfig := database.Config{
+		Host:            cfg.Database.Host,
+		Port:            cfg.Database.Port,
+		User:            cfg.Database.User,
+		Password:        cfg.Database.Password,
+		DBName:          cfg.Database.DBName,
+		SSLMode:         cfg.Database.SSLMode,
+		MaxOpenConns:    cfg.Database.MaxOpenConns,
+		MaxIdleConns:    cfg.Database.MaxIdleConns,
+		ConnMaxLifetime: cfg.Database.ConnMaxLifetime,
+	}
+
+	db, err := database.New(dbConfig)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to database")
+	}
+	defer database.Close(db)
+
+	// Create API server
+	server := api.NewServer(db)
+
+	// Configure HTTP server
+	httpServer := &http.Server{
+		Addr:         ":" + cfg.Server.Port,
+		Handler:      server.Handler(),
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start server in goroutine
+	go func() {
+		log.Info().
+			Str("port", cfg.Server.Port).
+			Msg("API server listening")
+
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("Server failed to start")
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info().Msg("Shutting down server...")
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("Server forced to shutdown")
+	}
+
+	log.Info().Msg("Server exited gracefully")
 }

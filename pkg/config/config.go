@@ -10,11 +10,14 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	Platform PlatformConfig
-	Registry RegistryConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	Redis       RedisConfig
+	Platform    PlatformConfig
+	Registry    RegistryConfig
+	Provisioner ProvisionerConfig
+	Deployer    DeployerConfig
+	Worker      WorkerConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -57,6 +60,29 @@ type RegistryConfig struct {
 	Project  string
 	Location string
 	URL      string
+}
+
+// ProvisionerConfig holds infrastructure provisioner configuration
+type ProvisionerConfig struct {
+	GCPProject      string
+	GCPRegion       string
+	PulumiBackend   string
+	DefaultNodeType string
+	DefaultNodes    int
+}
+
+// DeployerConfig holds Kubernetes deployer configuration
+type DeployerConfig struct {
+	DefaultReplicas int
+	DefaultPort     int
+	HelmTimeout     time.Duration
+	PodTimeout      time.Duration
+}
+
+// WorkerConfig holds orchestrator worker configuration
+type WorkerConfig struct {
+	Concurrency  int
+	PollInterval time.Duration
 }
 
 // Load loads configuration from environment variables and config files
@@ -113,6 +139,23 @@ func Load() (*Config, error) {
 			Location: viper.GetString("registry.location"),
 			URL:      viper.GetString("registry.url"),
 		},
+		Provisioner: ProvisionerConfig{
+			GCPProject:      viper.GetString("provisioner.gcp_project"),
+			GCPRegion:       viper.GetString("provisioner.gcp_region"),
+			PulumiBackend:   viper.GetString("provisioner.pulumi_backend"),
+			DefaultNodeType: viper.GetString("provisioner.default_node_type"),
+			DefaultNodes:    viper.GetInt("provisioner.default_nodes"),
+		},
+		Deployer: DeployerConfig{
+			DefaultReplicas: viper.GetInt("deployer.default_replicas"),
+			DefaultPort:     viper.GetInt("deployer.default_port"),
+			HelmTimeout:     viper.GetDuration("deployer.helm_timeout"),
+			PodTimeout:      viper.GetDuration("deployer.pod_timeout"),
+		},
+		Worker: WorkerConfig{
+			Concurrency:  viper.GetInt("worker.concurrency"),
+			PollInterval: viper.GetDuration("worker.poll_interval"),
+		},
 	}
 
 	// Override database config from DATABASE_URL if present
@@ -157,6 +200,23 @@ func setDefaults() {
 	viper.SetDefault("registry.project", "")
 	viper.SetDefault("registry.location", "us-central1")
 	viper.SetDefault("registry.url", "")
+
+	// Provisioner defaults
+	viper.SetDefault("provisioner.gcp_project", "")
+	viper.SetDefault("provisioner.gcp_region", "us-central1")
+	viper.SetDefault("provisioner.pulumi_backend", "")
+	viper.SetDefault("provisioner.default_node_type", "e2-small")
+	viper.SetDefault("provisioner.default_nodes", 2)
+
+	// Deployer defaults
+	viper.SetDefault("deployer.default_replicas", 2)
+	viper.SetDefault("deployer.default_port", 8080)
+	viper.SetDefault("deployer.helm_timeout", 5*time.Minute)
+	viper.SetDefault("deployer.pod_timeout", 5*time.Minute)
+
+	// Worker defaults
+	viper.SetDefault("worker.concurrency", 3)
+	viper.SetDefault("worker.poll_interval", 5*time.Second)
 }
 
 // GetDatabaseDSN returns the PostgreSQL connection string

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/mateus/app-deployer/internal/state"
+	"github.com/alvesdmateus/app-deployer/internal/state"
 )
 
 // DeploymentToResponse converts a state.Deployment to DeploymentResponse

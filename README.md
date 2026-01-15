@@ -35,6 +35,16 @@ App-deployer is a deployment automation platform that streamlines the process of
 - Health check endpoint
 - Graceful server shutdown
 
+### Phase 3: Source Code Analysis ✅
+- Multi-language detection (Go, Node.js, Python, Java, Rust, Ruby, PHP, .NET)
+- Framework detection (Express, Flask, Django, Spring Boot, Gin, etc.)
+- Dependency parsing (package.json, go.mod, requirements.txt, pom.xml, etc.)
+- Build tool detection (npm, yarn, go, pip, maven, gradle)
+- Runtime version detection
+- Port and command inference
+- File upload support for analysis
+- Confidence scoring
+
 ## Prerequisites
 
 - Go 1.25.5 or later
@@ -246,7 +256,7 @@ curl http://localhost:3000/api/v1/deployments
 - [x] Phase 0: Project initialization
 - [x] Phase 1: Core database connectivity
 - [x] Phase 2: HTTP API server
-- [ ] Phase 3: Source code analysis
+- [x] Phase 3: Source code analysis
 - [ ] Phase 4: Container image building
 - [ ] Phase 5: Infrastructure provisioning
 - [ ] Phase 6: Deployment orchestration

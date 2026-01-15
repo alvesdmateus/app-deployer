@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mateus/app-deployer/internal/state"
-	"github.com/mateus/app-deployer/pkg/config"
-	"github.com/mateus/app-deployer/pkg/database"
+	"github.com/alvesdmateus/app-deployer/internal/state"
+	"github.com/alvesdmateus/app-deployer/pkg/config"
+	"github.com/alvesdmateus/app-deployer/pkg/database"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
