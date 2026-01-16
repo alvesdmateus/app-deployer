@@ -89,15 +89,14 @@ func createKubeConfig(endpoint string, caCert []byte, clusterName string) *clien
 		CurrentContext: clusterName,
 		AuthInfos: map[string]*clientcmdapi.AuthInfo{
 			"gcp": {
-				// Use gcloud for authentication (will use exec plugin)
+				// Use gke-gcloud-auth-plugin for GKE authentication
 				Exec: &clientcmdapi.ExecConfig{
-					Command: "gcloud",
-					Args: []string{
-						"config",
-						"config-helper",
-						"--format=json",
-					},
-					APIVersion: "client.authentication.k8s.io/v1beta1",
+					Command:            "gke-gcloud-auth-plugin",
+					Args:               []string{},
+					APIVersion:         "client.authentication.k8s.io/v1beta1",
+					InteractiveMode:    clientcmdapi.NeverExecInteractiveMode,
+					InstallHint:        "Install gke-gcloud-auth-plugin: gcloud components install gke-gcloud-auth-plugin",
+					ProvideClusterInfo: true,
 				},
 			},
 		},

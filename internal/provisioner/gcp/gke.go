@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/container"
+	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/projects"
 	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -29,14 +30,37 @@ func createServiceAccount(ctx *pulumi.Context, req *ProvisionRequestInternal) (*
 		return nil, fmt.Errorf("failed to create service account: %w", err)
 	}
 
-	// Note: IAM role bindings should be added separately if needed
-	// For basic GKE operation, the default service account permissions are sufficient
-	// Additional roles can be added:
-	// - roles/logging.logWriter
-	// - roles/monitoring.metricWriter
-	// - roles/storage.objectViewer (for pulling images)
-
 	return sa, nil
+}
+
+// bindServiceAccountRoles binds necessary IAM roles to the GKE service account
+func bindServiceAccountRoles(ctx *pulumi.Context, sa *serviceaccount.Account, req *ProvisionRequestInternal) error {
+	// Define the roles needed for GKE nodes to operate properly
+	roles := []struct {
+		role        string
+		description string
+	}{
+		{"roles/logging.logWriter", "Write logs to Cloud Logging"},
+		{"roles/monitoring.metricWriter", "Write metrics to Cloud Monitoring"},
+		{"roles/monitoring.viewer", "View monitoring data"},
+		{"roles/storage.objectViewer", "Pull images from GCS/GCR"},
+		{"roles/artifactregistry.reader", "Pull images from Artifact Registry"},
+	}
+
+	for _, r := range roles {
+		bindingName := fmt.Sprintf("sa-binding-%s-%s", sanitizeName(r.role), getShortID(req.DeploymentID))
+
+		_, err := projects.NewIAMMember(ctx, bindingName, &projects.IAMMemberArgs{
+			Project: pulumi.String(req.GCPProject), // Use GCP project ID, not Pulumi project name
+			Role:    pulumi.String(r.role),
+			Member:  pulumi.Sprintf("serviceAccount:%s", sa.Email),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to bind role %s: %w", r.role, err)
+		}
+	}
+
+	return nil
 }
 
 // createGKECluster creates a GKE cluster
@@ -57,10 +81,14 @@ func createGKECluster(ctx *pulumi.Context, vpcResources *VPCResources, sa *servi
 		pulumiLabels[k] = pulumi.String(v)
 	}
 
+	// Use a specific zone for zonal cluster (reduces SSD quota requirement from 300GB to 100GB)
+	// Regional clusters need 3x the resources for HA control plane
+	clusterLocation := req.Region + "-a" // e.g., us-central1-a
+
 	// Create the GKE cluster
 	cluster, err := container.NewCluster(ctx, clusterName, &container.ClusterArgs{
 		Name:     pulumi.String(clusterName),
-		Location: pulumi.String(req.Region),
+		Location: pulumi.String(clusterLocation),
 
 		// Network configuration
 		Network:    vpcResources.VPC.SelfLink,
@@ -113,7 +141,7 @@ func createGKECluster(ctx *pulumi.Context, vpcResources *VPCResources, sa *servi
 
 		// Workload identity for pod-level IAM (recommended)
 		WorkloadIdentityConfig: &container.ClusterWorkloadIdentityConfigArgs{
-			WorkloadPool: pulumi.Sprintf("%s.svc.id.goog", ctx.Project()),
+			WorkloadPool: pulumi.Sprintf("%s.svc.id.goog", req.GCPProject),
 		},
 
 		// Maintenance window
@@ -160,7 +188,7 @@ func createNodePool(ctx *pulumi.Context, cluster *container.Cluster, sa *service
 	nodeCount := 2
 	machineType := "e2-small"
 	preemptible := false
-	diskSize := 50 // GB
+	diskSize := 30 // GB - reduced to stay within quota
 	diskType := "pd-standard"
 
 	if req.Config != nil {
@@ -282,6 +310,11 @@ func createGKEResources(ctx *pulumi.Context, vpcResources *VPCResources, req *Pr
 	sa, err := createServiceAccount(ctx, req)
 	if err != nil {
 		return nil, err
+	}
+
+	// Bind IAM roles to service account for GKE node operations
+	if err := bindServiceAccountRoles(ctx, sa, req); err != nil {
+		return nil, fmt.Errorf("failed to bind service account roles: %w", err)
 	}
 
 	// Create GKE cluster
