@@ -109,11 +109,11 @@ func (fd *FrameworkDetector) ParsePackageJSONFile(filePath string) Framework {
 
 	// Check dependencies for framework indicators
 	frameworks := map[string]Framework{
-		"express":   FrameworkExpress,
+		"express":      FrameworkExpress,
 		"@nestjs/core": FrameworkNestJS,
-		"next":      FrameworkNextJS,
-		"koa":       FrameworkKoa,
-		"fastify":   FrameworkFastify,
+		"next":         FrameworkNextJS,
+		"koa":          FrameworkKoa,
+		"fastify":      FrameworkFastify,
 	}
 
 	// Check both dependencies and devDependencies

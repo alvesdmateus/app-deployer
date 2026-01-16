@@ -134,9 +134,9 @@ func (q *RedisQueue) MarkFailed(ctx context.Context, jobID string, jobErr error)
 	// Store failure information with 24-hour TTL
 	failedKey := fmt.Sprintf("job:failed:%s", jobID)
 	failureData := map[string]interface{}{
-		"job_id":     jobID,
-		"error":      jobErr.Error(),
-		"failed_at":  time.Now().Unix(),
+		"job_id":    jobID,
+		"error":     jobErr.Error(),
+		"failed_at": time.Now().Unix(),
 	}
 
 	data, err := json.Marshal(failureData)

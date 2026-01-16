@@ -80,12 +80,12 @@ func (s *DockerStrategy) Build(ctx context.Context, buildCtx *buildtypes.BuildCo
 
 	// Build options
 	buildOptions := types.ImageBuildOptions{
-		Tags:       []string{imageTag},
-		Dockerfile: "Dockerfile.generated",
-		Remove:     true,        // Remove intermediate containers
-		ForceRemove: true,       // Always remove intermediate containers
-		PullParent: true,        // Pull parent images
-		NoCache:    false,       // Use cache for faster builds
+		Tags:        []string{imageTag},
+		Dockerfile:  "Dockerfile.generated",
+		Remove:      true,  // Remove intermediate containers
+		ForceRemove: true,  // Always remove intermediate containers
+		PullParent:  true,  // Pull parent images
+		NoCache:     false, // Use cache for faster builds
 		Labels: map[string]string{
 			"app.deployer.deployment": buildCtx.DeploymentID,
 			"app.deployer.app":        buildCtx.AppName,

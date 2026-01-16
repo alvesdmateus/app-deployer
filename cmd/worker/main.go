@@ -9,6 +9,8 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/alvesdmateus/app-deployer/internal/builder"
+	"github.com/alvesdmateus/app-deployer/internal/builder/registry"
 	"github.com/alvesdmateus/app-deployer/internal/deployer"
 	"github.com/alvesdmateus/app-deployer/internal/orchestrator"
 	"github.com/alvesdmateus/app-deployer/internal/provisioner"
@@ -137,9 +139,29 @@ func main() {
 
 	zlog.Info().Msg("Helm deployer initialized successfully")
 
+	// Initialize builder service
+	zlog.Info().Msg("Initializing builder service...")
+
+	builderTracker := builder.NewTracker(repo)
+	builderConfig := builder.ServiceConfig{
+		RegistryConfig: registry.Config{
+			Type:     cfg.Registry.Type,
+			Host:     cfg.Registry.URL,
+			Project:  cfg.Registry.Project,
+			Location: cfg.Registry.Location,
+		},
+	}
+
+	builderService, err := builder.NewService(builderConfig, builderTracker)
+	if err != nil {
+		zlog.Fatal().Err(err).Msg("Failed to create builder service")
+	}
+
+	zlog.Info().Msg("Builder service initialized successfully")
+
 	// Create orchestrator engine
 	zlog.Info().Msg("Creating orchestrator engine...")
-	engine := orchestrator.NewEngine(redisQueue, repo, gcpProv, helmDeployer, zlog)
+	engine := orchestrator.NewEngine(redisQueue, repo, builderService, gcpProv, helmDeployer, zlog)
 
 	// Create and start worker
 	worker := orchestrator.NewWorker(engine, cfg.Worker.Concurrency, zlog)

@@ -112,43 +112,43 @@ func (h *AnalyzerHandler) UploadAndAnalyze(w http.ResponseWriter, r *http.Reques
 func (h *AnalyzerHandler) GetSupportedLanguages(w http.ResponseWriter, r *http.Request) {
 	languages := []map[string]interface{}{
 		{
-			"id":   "go",
-			"name": "Go",
+			"id":         "go",
+			"name":       "Go",
 			"frameworks": []string{"gin", "echo", "chi", "fiber"},
 		},
 		{
-			"id":   "nodejs",
-			"name": "Node.js",
+			"id":         "nodejs",
+			"name":       "Node.js",
 			"frameworks": []string{"express", "nestjs", "nextjs", "koa", "fastify"},
 		},
 		{
-			"id":   "python",
-			"name": "Python",
+			"id":         "python",
+			"name":       "Python",
 			"frameworks": []string{"flask", "django", "fastapi"},
 		},
 		{
-			"id":   "java",
-			"name": "Java",
+			"id":         "java",
+			"name":       "Java",
 			"frameworks": []string{"springboot", "quarkus"},
 		},
 		{
-			"id":   "rust",
-			"name": "Rust",
+			"id":         "rust",
+			"name":       "Rust",
 			"frameworks": []string{},
 		},
 		{
-			"id":   "ruby",
-			"name": "Ruby",
+			"id":         "ruby",
+			"name":       "Ruby",
 			"frameworks": []string{},
 		},
 		{
-			"id":   "php",
-			"name": "PHP",
+			"id":         "php",
+			"name":       "PHP",
 			"frameworks": []string{},
 		},
 		{
-			"id":   "dotnet",
-			"name": ".NET",
+			"id":         "dotnet",
+			"name":       ".NET",
 			"frameworks": []string{},
 		},
 	}

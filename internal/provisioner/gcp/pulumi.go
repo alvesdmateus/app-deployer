@@ -242,7 +242,7 @@ func (p *GCPProvisioner) Destroy(ctx context.Context, req *provisioner.DestroyRe
 	// Select existing stack
 	stack, err := auto.SelectStackInlineSource(ctx, req.StackName, p.projectName, program,
 		auto.Project(workspace.Project{
-			Name: tokens.PackageName(p.projectName),
+			Name:    tokens.PackageName(p.projectName),
 			Runtime: workspace.NewProjectRuntimeInfo("go", nil),
 			Backend: &workspace.ProjectBackend{
 				URL: p.backendURL,
@@ -284,7 +284,7 @@ func (p *GCPProvisioner) GetStatus(ctx context.Context, stackName string) (*prov
 	// Select existing stack
 	stack, err := auto.SelectStackInlineSource(ctx, stackName, p.projectName, program,
 		auto.Project(workspace.Project{
-			Name: tokens.PackageName(p.projectName),
+			Name:    tokens.PackageName(p.projectName),
 			Runtime: workspace.NewProjectRuntimeInfo("go", nil),
 			Backend: &workspace.ProjectBackend{
 				URL: p.backendURL,
@@ -372,7 +372,7 @@ func (p *GCPProvisioner) createOrSelectStack(ctx context.Context, stackName stri
 
 	stack, err := auto.UpsertStackInlineSource(ctx, stackName, p.projectName, program,
 		auto.Project(workspace.Project{
-			Name: tokens.PackageName(p.projectName),
+			Name:    tokens.PackageName(p.projectName),
 			Runtime: workspace.NewProjectRuntimeInfo("go", nil),
 			Backend: &workspace.ProjectBackend{
 				URL: p.backendURL,

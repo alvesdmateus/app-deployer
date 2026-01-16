@@ -100,8 +100,8 @@ type StartDeploymentRequest struct {
 
 // TriggerRollbackRequest represents a request to rollback a deployment
 type TriggerRollbackRequest struct {
-	TargetVersion string `json:"target_version"`        // Required: version to rollback to
-	TargetTag     string `json:"target_tag,omitempty"`  // Optional: specific image tag
+	TargetVersion string `json:"target_version"`       // Required: version to rollback to
+	TargetTag     string `json:"target_tag,omitempty"` // Optional: specific image tag
 }
 
 // OrchestrationResponse represents a response for async orchestration operations

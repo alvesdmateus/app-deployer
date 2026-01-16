@@ -83,8 +83,8 @@ func (g *Generator) Validate(dockerfile string) error {
 // containsInstruction checks if a Dockerfile contains a specific instruction
 func containsInstruction(dockerfile, instruction string) bool {
 	return len(dockerfile) > 0 &&
-		   (len(instruction) > 0 &&
-		   (filepath.Base(dockerfile) != "" || instruction != ""))
+		(len(instruction) > 0 &&
+			(filepath.Base(dockerfile) != "" || instruction != ""))
 	// Simplified check - in production, would parse Dockerfile properly
 	// For now, templates always include required instructions
 }

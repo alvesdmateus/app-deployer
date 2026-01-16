@@ -16,11 +16,11 @@ type Deployment struct {
 	Status           string     `gorm:"not null;index"` // PENDING, BUILDING, PROVISIONING, DEPLOYING, EXPOSED, FAILED
 	Cloud            string     `gorm:"not null"`       // gcp, aws, azure
 	Region           string     `gorm:"not null"`
-	Port             int        `gorm:"default:8080"`   // Application port
+	Port             int        `gorm:"default:8080"`    // Application port
 	InfrastructureID *uuid.UUID `gorm:"type:uuid;index"` // Reference to infrastructure
 	ExternalIP       string
 	ExternalURL      string
-	Error            string     `gorm:"type:text"` // Last error message
+	Error            string `gorm:"type:text"` // Last error message
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeployedAt       *time.Time
@@ -37,11 +37,11 @@ type Infrastructure struct {
 	DeploymentID uuid.UUID `gorm:"type:uuid;not null;index"`
 
 	// Basic cluster info
-	ClusterName  string    `gorm:"not null"`
-	Namespace    string    `gorm:"not null"`
-	ServiceName  string
-	Status       string    `gorm:"not null"` // PROVISIONING, READY, FAILED, DESTROYING
-	Config       string    `gorm:"type:jsonb;default:'{}'"` // JSON config, defaults to empty object
+	ClusterName string `gorm:"not null"`
+	Namespace   string `gorm:"not null"`
+	ServiceName string
+	Status      string `gorm:"not null"`                // PROVISIONING, READY, FAILED, DESTROYING
+	Config      string `gorm:"type:jsonb;default:'{}'"` // JSON config, defaults to empty object
 
 	// Pulumi state tracking
 	PulumiStackName   string `gorm:"index"` // Unique stack name for idempotency
@@ -63,9 +63,9 @@ type Infrastructure struct {
 	// GKE cluster details
 	ClusterEndpoint     string
 	ClusterCACert       string `gorm:"type:text"` // Base64 encoded CA cert
-	ClusterLocation     string                    // GCP region/zone
+	ClusterLocation     string // GCP region/zone
 	NodePoolName        string
-	NodeCount           int    `gorm:"default:2"`
+	NodeCount           int `gorm:"default:2"`
 	ServiceAccountEmail string
 
 	// Kubernetes deployment details (from deployer phase)
@@ -77,9 +77,9 @@ type Infrastructure struct {
 	LastError    string `gorm:"type:text"` // Last error message
 	ProvisionLog string `gorm:"type:text"` // Provision operation logs
 
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // Build represents a container build for a deployment

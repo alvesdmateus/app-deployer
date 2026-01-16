@@ -20,11 +20,11 @@ const (
 
 // Deployment phases
 const (
-	PhaseQueued      = "QUEUED"
+	PhaseQueued       = "QUEUED"
 	PhaseProvisioning = "PROVISIONING"
-	PhaseDeploying   = "DEPLOYING"
-	PhaseDestroying  = "DESTROYING"
-	PhaseRollingBack = "ROLLING_BACK"
+	PhaseDeploying    = "DEPLOYING"
+	PhaseDestroying   = "DESTROYING"
+	PhaseRollingBack  = "ROLLING_BACK"
 )
 
 // DeploymentLogger writes logs to the database for deployment tracking
