@@ -8,8 +8,8 @@ server:
   log_level: info
 
 database:
-  host: localhost
-  port: 5432
+  host: 127.0.0.1
+  port: 5434
   user: deployer
   password: deployer_dev_password
   dbname: app_deployer
@@ -29,14 +29,14 @@ platform:
 
 registry:
   type: artifact-registry  # artifact-registry, harbor, ecr, acr
-  project: ""  # Set your GCP project ID
+  project: "daring-precinct-478521-a3"
   location: us-central1
   url: ""
 
 provisioner:
-  gcp_project: ""  # Set your GCP project ID for infrastructure provisioning
+  gcp_project: "daring-precinct-478521-a3"
   gcp_region: us-central1
-  pulumi_backend: ""  # e.g., gs://my-pulumi-state-bucket/app-deployer
+  pulumi_backend: "gs://daring-precinct-478521-a3-pulumi-state/app-deployer"
   default_node_type: e2-small
   default_nodes: 2
 

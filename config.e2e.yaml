@@ -1,0 +1,72 @@
+# E2E Test Configuration
+# Copy relevant sections to config.yaml or set environment variables before running tests
+#
+# Required environment variables:
+#   E2E_GCP_PROJECT      - GCP project ID for test resources
+#   E2E_PULUMI_BACKEND   - Pulumi state backend URL (e.g., gs://bucket/path)
+#
+# Optional environment variables:
+#   E2E_GCP_REGION       - GCP region (default: us-central1)
+#   E2E_SKIP_CLEANUP     - Set to "true" to skip resource cleanup for debugging
+#   E2E_TEST_IMAGE       - Container image to deploy (default: nginx:alpine)
+#   E2E_TEST_PORT        - Port the test image listens on (default: 80)
+
+server:
+  port: "3001"  # Different port for E2E tests
+  read_timeout: 30s
+  write_timeout: 30s
+  log_level: debug
+
+database:
+  host: localhost
+  port: 5432
+  user: deployer
+  password: deployer_dev_password
+  dbname: app_deployer_e2e  # Separate DB for E2E tests
+  sslmode: disable
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+
+redis:
+  url: localhost:6379
+  password: ""
+  db: 1  # Different Redis DB for E2E tests
+
+platform:
+  default_cloud: gcp
+  default_region: us-central1
+
+registry:
+  type: artifact-registry
+  project: ""  # Set via E2E_GCP_PROJECT
+  location: us-central1
+  url: ""
+
+provisioner:
+  gcp_project: ""      # Set via E2E_GCP_PROJECT
+  gcp_region: us-central1
+  pulumi_backend: ""   # Set via E2E_PULUMI_BACKEND
+  default_node_type: e2-small
+  default_nodes: 2     # Minimum for GKE
+
+deployer:
+  default_replicas: 1  # Single replica for E2E tests (faster)
+  default_port: 80
+  helm_timeout: 10m
+  pod_timeout: 5m
+
+worker:
+  concurrency: 1  # Single worker for E2E tests
+  poll_interval: 5s
+
+# E2E-specific settings (read by test code)
+e2e:
+  test_image: nginx:alpine
+  test_port: 80
+  timeout_provision: 20m
+  timeout_deploy: 10m
+  timeout_destroy: 15m
+  poll_interval: 30s
+  cleanup_on_success: true
+  cleanup_on_failure: true

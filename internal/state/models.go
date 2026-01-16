@@ -41,20 +41,24 @@ type Infrastructure struct {
 	Namespace    string    `gorm:"not null"`
 	ServiceName  string
 	Status       string    `gorm:"not null"` // PROVISIONING, READY, FAILED, DESTROYING
-	Config       string    `gorm:"type:jsonb"`
+	Config       string    `gorm:"type:jsonb;default:'{}'"` // JSON config, defaults to empty object
 
 	// Pulumi state tracking
 	PulumiStackName   string `gorm:"index"` // Unique stack name for idempotency
 	PulumiProjectName string
 	PulumiBackendURL  string
 
+	// Cloud provider info
+	CloudProvider string // gcp, aws, azure
+	GCPProject    string // GCP project ID (for gcloud commands)
+
 	// GCP resources
-	VPCName           string
-	VPCNetwork        string // Full VPC network path
-	SubnetName        string
-	SubnetCIDR        string
-	RouterName        string
-	NATName           string
+	VPCName    string
+	VPCNetwork string // Full VPC network path
+	SubnetName string
+	SubnetCIDR string
+	RouterName string
+	NATName    string
 
 	// GKE cluster details
 	ClusterEndpoint     string
@@ -90,4 +94,17 @@ type Build struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
+}
+
+// DeploymentLog represents a log entry for deployment operations
+type DeploymentLog struct {
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey"`
+	DeploymentID uuid.UUID `gorm:"type:uuid;not null;index"`
+	JobID        string    `gorm:"index"`                   // Job ID for correlation
+	Phase        string    `gorm:"not null;index"`          // QUEUED, PROVISIONING, DEPLOYING, DESTROYING, ROLLING_BACK
+	Level        string    `gorm:"not null;default:INFO"`   // DEBUG, INFO, WARN, ERROR
+	Message      string    `gorm:"type:text;not null"`      // Log message
+	Details      string    `gorm:"type:jsonb;default:'{}'"` // Additional structured details (JSON)
+	Timestamp    time.Time `gorm:"not null;index"`          // When the log was created
+	CreatedAt    time.Time
 }

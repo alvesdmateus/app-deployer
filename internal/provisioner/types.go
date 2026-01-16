@@ -64,20 +64,32 @@ type ProvisionConfig struct {
 
 // ProvisionResult contains the result of provisioning
 type ProvisionResult struct {
-	InfrastructureID  string
-	StackName         string
-	ClusterName       string
-	ClusterEndpoint   string
-	ClusterCACert     string // Base64 encoded
-	ClusterLocation   string
-	VPCName           string
-	VPCNetwork        string
-	SubnetName        string
-	SubnetCIDR        string
-	Namespace         string
-	ServiceAccount    string
-	ProvisionLog      string
-	Duration          time.Duration
+	InfrastructureID string
+	StackName        string
+
+	// Cloud provider info
+	CloudProvider string // gcp, aws, azure
+	GCPProject    string // GCP project ID
+
+	// Cluster info
+	ClusterName     string
+	ClusterEndpoint string
+	ClusterCACert   string // Base64 encoded
+	ClusterLocation string
+
+	// Network info
+	VPCName    string
+	VPCNetwork string
+	SubnetName string
+	SubnetCIDR string
+	RouterName string
+	NATName    string
+
+	// Other
+	Namespace      string
+	ServiceAccount string
+	ProvisionLog   string
+	Duration       time.Duration
 }
 
 // DestroyRequest contains info for destroying infrastructure

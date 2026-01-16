@@ -156,6 +156,9 @@ func (s *Server) setupRoutes() {
 				r.Post("/deploy", s.deploymentHandler.StartDeployment)
 				r.Post("/rollback", s.deploymentHandler.TriggerRollback)
 
+				// Logs endpoint
+				r.Get("/logs", s.deploymentHandler.GetDeploymentLogs)
+
 				// Infrastructure sub-routes
 				r.Get("/infrastructure", s.infrastructureHandler.GetInfrastructure)
 

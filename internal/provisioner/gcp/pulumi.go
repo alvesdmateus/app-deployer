@@ -19,24 +19,29 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/provisioner"
 )
 
+// Default timeout for provisioning operations (20 minutes)
+const DefaultProvisionTimeout = 20 * time.Minute
+
 // GCPProvisioner implements the Provisioner interface for GCP using Pulumi
 type GCPProvisioner struct {
-	projectName  string
-	gcpProject   string
-	gcpRegion    string
-	backendURL   string
-	tracker      *provisioner.Tracker
-	defaultNodes int
-	defaultType  string
+	projectName      string
+	gcpProject       string
+	gcpRegion        string
+	backendURL       string
+	tracker          *provisioner.Tracker
+	defaultNodes     int
+	defaultType      string
+	provisionTimeout time.Duration
 }
 
 // Config holds GCP provisioner configuration
 type Config struct {
-	GCPProject      string
-	GCPRegion       string
-	PulumiBackend   string
-	DefaultNodeType string
-	DefaultNodes    int
+	GCPProject       string
+	GCPRegion        string
+	PulumiBackend    string
+	DefaultNodeType  string
+	DefaultNodes     int
+	ProvisionTimeout time.Duration // Optional: defaults to 20 minutes
 }
 
 // NewGCPProvisioner creates a new GCP provisioner
@@ -61,20 +66,26 @@ func NewGCPProvisioner(config Config, tracker *provisioner.Tracker) (*GCPProvisi
 		config.DefaultNodes = 2
 	}
 
+	if config.ProvisionTimeout == 0 {
+		config.ProvisionTimeout = DefaultProvisionTimeout
+	}
+
 	log.Info().
 		Str("gcpProject", config.GCPProject).
 		Str("gcpRegion", config.GCPRegion).
 		Str("backendURL", config.PulumiBackend).
+		Dur("provisionTimeout", config.ProvisionTimeout).
 		Msg("GCP provisioner initialized")
 
 	return &GCPProvisioner{
-		projectName:  "app-deployer",
-		gcpProject:   config.GCPProject,
-		gcpRegion:    config.GCPRegion,
-		backendURL:   config.PulumiBackend,
-		tracker:      tracker,
-		defaultNodes: config.DefaultNodes,
-		defaultType:  config.DefaultNodeType,
+		projectName:      "app-deployer",
+		gcpProject:       config.GCPProject,
+		gcpRegion:        config.GCPRegion,
+		backendURL:       config.PulumiBackend,
+		tracker:          tracker,
+		defaultNodes:     config.DefaultNodes,
+		defaultType:      config.DefaultNodeType,
+		provisionTimeout: config.ProvisionTimeout,
 	}, nil
 }
 
@@ -110,10 +121,15 @@ func (p *GCPProvisioner) VerifyAccess(ctx context.Context) error {
 func (p *GCPProvisioner) Provision(ctx context.Context, req *provisioner.ProvisionRequest) (*provisioner.ProvisionResult, error) {
 	startTime := time.Now()
 
+	// Apply timeout to context
+	ctx, cancel := context.WithTimeout(ctx, p.provisionTimeout)
+	defer cancel()
+
 	log.Info().
 		Str("deploymentID", req.DeploymentID).
 		Str("appName", req.AppName).
 		Str("region", req.Region).
+		Dur("timeout", p.provisionTimeout).
 		Msg("Starting GCP infrastructure provisioning")
 
 	// Verify access
@@ -332,6 +348,8 @@ func (p *GCPProvisioner) createPulumiProgram(req *ProvisionRequestInternal) pulu
 		ctx.Export("vpcNetwork", vpcResources.VPC.SelfLink)
 		ctx.Export("subnetName", vpcResources.Subnet.Name)
 		ctx.Export("subnetCIDR", vpcResources.Subnet.IpCidrRange)
+		ctx.Export("routerName", vpcResources.Router.Name)
+		ctx.Export("natName", vpcResources.NAT.Name)
 		ctx.Export("clusterName", gkeResources.Cluster.Name)
 		ctx.Export("clusterEndpoint", gkeResources.Cluster.Endpoint)
 		ctx.Export("clusterCACert", gkeResources.Cluster.MasterAuth.ClusterCaCertificate())
@@ -339,6 +357,7 @@ func (p *GCPProvisioner) createPulumiProgram(req *ProvisionRequestInternal) pulu
 		ctx.Export("serviceAccount", gkeResources.ServiceAccount.Email)
 		ctx.Export("nodePoolName", gkeResources.NodePool.Name)
 		ctx.Export("namespace", pulumi.String(generateNamespace(req.AppName, req.DeploymentID)))
+		ctx.Export("gcpProject", pulumi.String(ctx.Project()))
 
 		return nil
 	}
@@ -399,6 +418,8 @@ func (p *GCPProvisioner) extractOutputs(upResult auto.UpResult, stackName, infra
 	return &provisioner.ProvisionResult{
 		InfrastructureID: infraID,
 		StackName:        stackName,
+		CloudProvider:    "gcp",
+		GCPProject:       getString("gcpProject"),
 		ClusterName:      getString("clusterName"),
 		ClusterEndpoint:  getString("clusterEndpoint"),
 		ClusterCACert:    getString("clusterCACert"),
@@ -407,6 +428,8 @@ func (p *GCPProvisioner) extractOutputs(upResult auto.UpResult, stackName, infra
 		VPCNetwork:       getString("vpcNetwork"),
 		SubnetName:       getString("subnetName"),
 		SubnetCIDR:       getString("subnetCIDR"),
+		RouterName:       getString("routerName"),
+		NATName:          getString("natName"),
 		ServiceAccount:   getString("serviceAccount"),
 		Namespace:        getString("namespace"),
 		ProvisionLog:     upResult.StdOut,
@@ -451,6 +474,7 @@ func (p *GCPProvisioner) convertRequest(req *provisioner.ProvisionRequest) *Prov
 		Version:      req.Version,
 		Cloud:        req.Cloud,
 		Region:       req.Region,
+		GCPProject:   p.gcpProject, // Use the GCP project from provisioner config
 	}
 
 	// Convert config

@@ -15,12 +15,16 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/state"
 )
 
+// Default timeout for deployment operations (10 minutes)
+const DefaultDeployTimeout = 10 * time.Minute
+
 // HelmDeployer implements Deployer interface using Helm
 type HelmDeployer struct {
 	tracker         *Tracker
 	chartPath       string
 	defaultReplicas int
 	defaultPort     int
+	deployTimeout   time.Duration
 }
 
 // Config holds deployer configuration
@@ -28,6 +32,7 @@ type Config struct {
 	ChartPath       string
 	DefaultReplicas int
 	DefaultPort     int
+	DeployTimeout   time.Duration // Optional: defaults to 10 minutes
 }
 
 // NewHelmDeployer creates a new Helm-based deployer
@@ -44,6 +49,10 @@ func NewHelmDeployer(config Config, tracker *Tracker) (*HelmDeployer, error) {
 		config.DefaultPort = 8080
 	}
 
+	if config.DeployTimeout == 0 {
+		config.DeployTimeout = DefaultDeployTimeout
+	}
+
 	// Verify Helm is installed
 	if err := verifyHelmInstalled(); err != nil {
 		return nil, err
@@ -52,6 +61,7 @@ func NewHelmDeployer(config Config, tracker *Tracker) (*HelmDeployer, error) {
 	log.Info().
 		Str("chartPath", config.ChartPath).
 		Int("defaultReplicas", config.DefaultReplicas).
+		Dur("deployTimeout", config.DeployTimeout).
 		Msg("Helm deployer initialized")
 
 	return &HelmDeployer{
@@ -59,6 +69,7 @@ func NewHelmDeployer(config Config, tracker *Tracker) (*HelmDeployer, error) {
 		chartPath:       config.ChartPath,
 		defaultReplicas: config.DefaultReplicas,
 		defaultPort:     config.DefaultPort,
+		deployTimeout:   config.DeployTimeout,
 	}, nil
 }
 
@@ -75,10 +86,15 @@ func verifyHelmInstalled() error {
 func (h *HelmDeployer) Deploy(ctx context.Context, req *DeployRequest) (*DeployResult, error) {
 	startTime := time.Now()
 
+	// Apply timeout to context
+	ctx, cancel := context.WithTimeout(ctx, h.deployTimeout)
+	defer cancel()
+
 	log.Info().
 		Str("deploymentID", req.DeploymentID).
 		Str("appName", req.AppName).
 		Str("imageTag", req.ImageTag).
+		Dur("timeout", h.deployTimeout).
 		Msg("Starting Helm deployment")
 
 	// Start deployment tracking
@@ -358,6 +374,12 @@ func (h *HelmDeployer) generateValues(req *DeployRequest, infra *state.Infrastru
 		imageTag = parts[1]
 	}
 
+	// Determine service type
+	serviceType := "LoadBalancer"
+	if req.Config != nil && req.Config.ServiceType != "" {
+		serviceType = req.Config.ServiceType
+	}
+
 	values := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": imageRepo,
@@ -366,24 +388,142 @@ func (h *HelmDeployer) generateValues(req *DeployRequest, infra *state.Infrastru
 		},
 		"replicaCount": replicas,
 		"service": map[string]interface{}{
-			"type": "LoadBalancer",
-			"port": port,
-		},
-		"resources": map[string]interface{}{
-			"limits": map[string]interface{}{
-				"cpu":    req.CPULimit,
-				"memory": req.MemoryLimit,
-			},
-			"requests": map[string]interface{}{
-				"cpu":    req.CPURequest,
-				"memory": req.MemoryRequest,
-			},
+			"type":       serviceType,
+			"port":       port,
+			"targetPort": port,
 		},
 		"labels": map[string]interface{}{
 			"app":           req.AppName,
 			"deployment-id": req.DeploymentID,
 			"managed-by":    "app-deployer",
 		},
+	}
+
+	// Add resource limits/requests if provided
+	resources := make(map[string]interface{})
+	limits := make(map[string]interface{})
+	requests := make(map[string]interface{})
+
+	if req.CPULimit != "" {
+		limits["cpu"] = req.CPULimit
+	} else {
+		limits["cpu"] = "1000m"
+	}
+	if req.MemoryLimit != "" {
+		limits["memory"] = req.MemoryLimit
+	} else {
+		limits["memory"] = "1Gi"
+	}
+	if req.CPURequest != "" {
+		requests["cpu"] = req.CPURequest
+	} else {
+		requests["cpu"] = "100m"
+	}
+	if req.MemoryRequest != "" {
+		requests["memory"] = req.MemoryRequest
+	} else {
+		requests["memory"] = "128Mi"
+	}
+
+	resources["limits"] = limits
+	resources["requests"] = requests
+	values["resources"] = resources
+
+	// Configure health checks
+	healthCheckPath := "/"
+	if req.Config != nil && req.Config.HealthCheckPath != "" {
+		healthCheckPath = req.Config.HealthCheckPath
+	}
+
+	readinessPath := healthCheckPath
+	if req.Config != nil && req.Config.ReadinessPath != "" {
+		readinessPath = req.Config.ReadinessPath
+	}
+
+	livenessPath := healthCheckPath
+	if req.Config != nil && req.Config.LivenessPath != "" {
+		livenessPath = req.Config.LivenessPath
+	}
+
+	values["healthCheck"] = map[string]interface{}{
+		"enabled": true,
+		"livenessProbe": map[string]interface{}{
+			"httpGet": map[string]interface{}{
+				"path": livenessPath,
+				"port": "http",
+			},
+			"initialDelaySeconds": 30,
+			"periodSeconds":       10,
+			"timeoutSeconds":      5,
+			"failureThreshold":    3,
+		},
+		"readinessProbe": map[string]interface{}{
+			"httpGet": map[string]interface{}{
+				"path": readinessPath,
+				"port": "http",
+			},
+			"initialDelaySeconds": 10,
+			"periodSeconds":       5,
+			"timeoutSeconds":      3,
+			"failureThreshold":    3,
+		},
+	}
+
+	// Configure autoscaling if enabled
+	if req.Config != nil && req.Config.EnableHPA {
+		minReplicas := req.Config.MinReplicas
+		if minReplicas == 0 {
+			minReplicas = 1
+		}
+		maxReplicas := req.Config.MaxReplicas
+		if maxReplicas == 0 {
+			maxReplicas = 10
+		}
+		targetCPU := req.Config.TargetCPU
+		if targetCPU == 0 {
+			targetCPU = 80
+		}
+
+		values["autoscaling"] = map[string]interface{}{
+			"enabled":                       true,
+			"minReplicas":                   minReplicas,
+			"maxReplicas":                   maxReplicas,
+			"targetCPUUtilizationPercentage": targetCPU,
+		}
+
+		if req.Config.TargetMemory > 0 {
+			values["autoscaling"].(map[string]interface{})["targetMemoryUtilizationPercentage"] = req.Config.TargetMemory
+		}
+	}
+
+	// Configure ingress if enabled
+	if req.Config != nil && req.Config.EnableIngress && req.Config.IngressHost != "" {
+		ingressConfig := map[string]interface{}{
+			"enabled":   true,
+			"className": "nginx",
+			"hosts": []map[string]interface{}{
+				{
+					"host": req.Config.IngressHost,
+					"paths": []map[string]interface{}{
+						{
+							"path":     "/",
+							"pathType": "Prefix",
+						},
+					},
+				},
+			},
+		}
+
+		if req.Config.IngressTLS {
+			ingressConfig["tls"] = []map[string]interface{}{
+				{
+					"secretName": fmt.Sprintf("%s-tls", req.AppName),
+					"hosts":      []string{req.Config.IngressHost},
+				},
+			}
+		}
+
+		values["ingress"] = ingressConfig
 	}
 
 	// Add environment variables if provided
@@ -396,6 +536,13 @@ func (h *HelmDeployer) generateValues(req *DeployRequest, infra *state.Infrastru
 			})
 		}
 		values["env"] = envVars
+	}
+
+	// Add custom labels if provided
+	if req.Config != nil && len(req.Config.Labels) > 0 {
+		for k, v := range req.Config.Labels {
+			values["labels"].(map[string]interface{})[k] = v
+		}
 	}
 
 	return values, nil
@@ -469,11 +616,20 @@ func (h *HelmDeployer) setupKubeconfig(infra *state.Infrastructure) (string, fun
 	tmpDir := os.TempDir()
 	kubeconfigPath := filepath.Join(tmpDir, fmt.Sprintf("kubeconfig-%d", time.Now().UnixNano()))
 
+	// Get GCP project from infrastructure, fall back to environment variable
+	gcpProject := infra.GCPProject
+	if gcpProject == "" {
+		gcpProject = os.Getenv("GCP_PROJECT")
+	}
+	if gcpProject == "" {
+		return "", nil, fmt.Errorf("GCP project not found in infrastructure or environment")
+	}
+
 	// Use gcloud to get cluster credentials
 	cmd := exec.Command("gcloud", "container", "clusters", "get-credentials",
 		infra.ClusterName,
 		"--region", infra.ClusterLocation,
-		"--project", os.Getenv("GCP_PROJECT"),
+		"--project", gcpProject,
 	)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 

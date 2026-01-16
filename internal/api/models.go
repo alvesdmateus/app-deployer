@@ -118,3 +118,22 @@ type QueueStatsResponse struct {
 	Destroy   int64 `json:"destroy"`
 	Rollback  int64 `json:"rollback"`
 }
+
+// DeploymentLogResponse represents a deployment log entry in API responses
+type DeploymentLogResponse struct {
+	ID        uuid.UUID `json:"id"`
+	JobID     string    `json:"job_id,omitempty"`
+	Phase     string    `json:"phase"`
+	Level     string    `json:"level"`
+	Message   string    `json:"message"`
+	Details   string    `json:"details,omitempty"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// ListDeploymentLogsResponse represents a paginated list of deployment logs
+type ListDeploymentLogsResponse struct {
+	Logs   []DeploymentLogResponse `json:"logs"`
+	Total  int64                   `json:"total"`
+	Limit  int                     `json:"limit"`
+	Offset int                     `json:"offset"`
+}

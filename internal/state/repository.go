@@ -101,6 +101,13 @@ func (r *Repository) DeleteDeployment(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("failed to delete builds: %w", err)
 	}
 
+	// Delete deployment logs
+	if err := r.db.WithContext(ctx).
+		Where("deployment_id = ?", id).
+		Delete(&DeploymentLog{}).Error; err != nil {
+		return fmt.Errorf("failed to delete deployment logs: %w", err)
+	}
+
 	// Delete deployment
 	if err := r.db.WithContext(ctx).Delete(&Deployment{}, "id = ?", id).Error; err != nil {
 		return fmt.Errorf("failed to delete deployment: %w", err)
@@ -358,4 +365,88 @@ func (r *Repository) GetRecentDeployments(ctx context.Context, limit int) ([]Dep
 // GetDeploymentByID is an alias for GetDeployment (for API consistency)
 func (r *Repository) GetDeploymentByID(ctx context.Context, id uuid.UUID) (*Deployment, error) {
 	return r.GetDeployment(ctx, id)
+}
+
+// CreateDeploymentLog creates a new deployment log entry
+func (r *Repository) CreateDeploymentLog(ctx context.Context, log *DeploymentLog) error {
+	if log.ID == uuid.Nil {
+		log.ID = uuid.New()
+	}
+
+	if log.Timestamp.IsZero() {
+		log.Timestamp = time.Now()
+	}
+
+	if err := r.db.WithContext(ctx).Create(log).Error; err != nil {
+		return fmt.Errorf("failed to create deployment log: %w", err)
+	}
+
+	return nil
+}
+
+// GetDeploymentLogs retrieves logs for a deployment with optional filtering and pagination
+func (r *Repository) GetDeploymentLogs(ctx context.Context, deploymentID uuid.UUID, phase string, limit, offset int) ([]DeploymentLog, error) {
+	var logs []DeploymentLog
+
+	query := r.db.WithContext(ctx).
+		Where("deployment_id = ?", deploymentID).
+		Order("timestamp ASC")
+
+	if phase != "" {
+		query = query.Where("phase = ?", phase)
+	}
+
+	if limit > 0 {
+		query = query.Limit(limit).Offset(offset)
+	}
+
+	if err := query.Find(&logs).Error; err != nil {
+		return nil, fmt.Errorf("failed to get deployment logs: %w", err)
+	}
+
+	return logs, nil
+}
+
+// CountDeploymentLogs counts total logs for a deployment with optional phase filter
+func (r *Repository) CountDeploymentLogs(ctx context.Context, deploymentID uuid.UUID, phase string) (int64, error) {
+	var count int64
+
+	query := r.db.WithContext(ctx).
+		Model(&DeploymentLog{}).
+		Where("deployment_id = ?", deploymentID)
+
+	if phase != "" {
+		query = query.Where("phase = ?", phase)
+	}
+
+	if err := query.Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("failed to count deployment logs: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetDeploymentLogsByJobID retrieves logs for a specific job
+func (r *Repository) GetDeploymentLogsByJobID(ctx context.Context, jobID string) ([]DeploymentLog, error) {
+	var logs []DeploymentLog
+
+	if err := r.db.WithContext(ctx).
+		Where("job_id = ?", jobID).
+		Order("timestamp ASC").
+		Find(&logs).Error; err != nil {
+		return nil, fmt.Errorf("failed to get logs by job ID: %w", err)
+	}
+
+	return logs, nil
+}
+
+// DeleteDeploymentLogs deletes all logs for a deployment
+func (r *Repository) DeleteDeploymentLogs(ctx context.Context, deploymentID uuid.UUID) error {
+	if err := r.db.WithContext(ctx).
+		Where("deployment_id = ?", deploymentID).
+		Delete(&DeploymentLog{}).Error; err != nil {
+		return fmt.Errorf("failed to delete deployment logs: %w", err)
+	}
+
+	return nil
 }
