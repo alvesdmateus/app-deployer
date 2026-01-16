@@ -1,8 +1,7 @@
 linters-settings:
   govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
+    enable:
+      - shadow
   gocyclo:
     min-complexity: 15
   maligned:
@@ -17,7 +16,7 @@ linters-settings:
   lll:
     line-length: 140
   goimports:
-    local-prefixes: github.com/yourusername/app-deployer
+    local-prefixes: github.com/alvesdmateus/app-deployer
   gocritic:
     enabled-tags:
       - diagnostic

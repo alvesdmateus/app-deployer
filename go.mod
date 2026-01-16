@@ -1,8 +1,6 @@
 module github.com/alvesdmateus/app-deployer
 
-go 1.25.0
-
-toolchain go1.25.5
+go 1.22
 
 require (
 	github.com/docker/docker v28.5.2+incompatible
