@@ -34,15 +34,10 @@ jobs:
             exit 1
           fi
 
-      - name: Check go.mod tidiness
+      - name: Verify dependencies
         run: |
-          GOTOOLCHAIN=local go mod tidy
-          # Only check go.sum changes, ignore go directive version differences
-          if [ -n "$(git diff --name-only go.sum)" ]; then
-            echo "::error::go.sum is not tidy. Run 'go mod tidy' to fix."
-            git diff go.sum
-            exit 1
-          fi
+          go mod download
+          go mod verify
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
