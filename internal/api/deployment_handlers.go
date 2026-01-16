@@ -430,3 +430,83 @@ func (h *DeploymentHandler) GetQueueStats(w http.ResponseWriter, r *http.Request
 	}
 	RespondWithJSON(w, http.StatusOK, response)
 }
+
+// GetDeploymentLogs handles GET /api/v1/deployments/{id}/logs
+func (h *DeploymentHandler) GetDeploymentLogs(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid deployment ID")
+		return
+	}
+
+	// Verify deployment exists
+	_, err = h.repo.GetDeployment(r.Context(), id)
+	if err != nil {
+		log.Error().Err(err).Str("id", idStr).Msg("Deployment not found")
+		RespondWithError(w, http.StatusNotFound, "Deployment not found")
+		return
+	}
+
+	// Parse query parameters
+	phase := r.URL.Query().Get("phase")
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 100 // default
+	offset := 0
+
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+			if limit > 1000 {
+				limit = 1000 // max limit
+			}
+		}
+	}
+
+	if offsetStr != "" {
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	// Get logs from database
+	logs, err := h.repo.GetDeploymentLogs(r.Context(), id, phase, limit, offset)
+	if err != nil {
+		log.Error().Err(err).Str("id", idStr).Msg("Failed to get deployment logs")
+		RespondWithError(w, http.StatusInternalServerError, "Failed to get deployment logs")
+		return
+	}
+
+	// Get total count
+	total, err := h.repo.CountDeploymentLogs(r.Context(), id, phase)
+	if err != nil {
+		log.Error().Err(err).Str("id", idStr).Msg("Failed to count deployment logs")
+		RespondWithError(w, http.StatusInternalServerError, "Failed to get deployment logs")
+		return
+	}
+
+	// Convert to response
+	logResponses := make([]DeploymentLogResponse, len(logs))
+	for i, l := range logs {
+		logResponses[i] = DeploymentLogResponse{
+			ID:        l.ID,
+			JobID:     l.JobID,
+			Phase:     l.Phase,
+			Level:     l.Level,
+			Message:   l.Message,
+			Details:   l.Details,
+			Timestamp: l.Timestamp,
+		}
+	}
+
+	response := ListDeploymentLogsResponse{
+		Logs:   logResponses,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	}
+
+	RespondWithJSON(w, http.StatusOK, response)
+}

@@ -61,7 +61,7 @@ func main() {
 
 	// Run migrations
 	zlog.Info().Msg("Running database migrations...")
-	if err := database.Migrate(db, &state.Deployment{}, &state.Infrastructure{}, &state.Build{}); err != nil {
+	if err := database.Migrate(db, &state.Deployment{}, &state.Infrastructure{}, &state.Build{}, &state.DeploymentLog{}); err != nil {
 		zlog.Fatal().Err(err).Msg("Failed to run database migrations")
 	}
 	zlog.Info().Msg("Database migrations completed")

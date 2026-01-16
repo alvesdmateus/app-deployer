@@ -59,6 +59,7 @@ func (t *Tracker) StartProvisioning(ctx context.Context, deploymentID, stackName
 		PulumiStackName:   stackName,
 		PulumiProjectName: "app-deployer",
 		Status:            "PROVISIONING",
+		Config:            "{}",
 		ProvisionLog:      "",
 	}
 
@@ -119,6 +120,8 @@ func (t *Tracker) CompleteProvisioning(ctx context.Context, infraID string, resu
 
 	// Update with provisioning results
 	infra.Status = "READY"
+	infra.CloudProvider = result.CloudProvider
+	infra.GCPProject = result.GCPProject
 	infra.ClusterName = result.ClusterName
 	infra.ClusterEndpoint = result.ClusterEndpoint
 	infra.ClusterCACert = result.ClusterCACert
@@ -127,6 +130,8 @@ func (t *Tracker) CompleteProvisioning(ctx context.Context, infraID string, resu
 	infra.VPCNetwork = result.VPCNetwork
 	infra.SubnetName = result.SubnetName
 	infra.SubnetCIDR = result.SubnetCIDR
+	infra.RouterName = result.RouterName
+	infra.NATName = result.NATName
 	infra.ServiceAccountEmail = result.ServiceAccount
 	infra.Namespace = result.Namespace
 	infra.ProvisionLog += result.ProvisionLog

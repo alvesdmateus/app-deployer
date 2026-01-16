@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/alvesdmateus/app-deployer/internal/builder"
 	"github.com/alvesdmateus/app-deployer/internal/deployer"
 	"github.com/alvesdmateus/app-deployer/internal/provisioner"
 	"github.com/alvesdmateus/app-deployer/internal/queue"
@@ -17,6 +18,7 @@ import (
 type Engine struct {
 	queue       *queue.RedisQueue
 	repo        *state.Repository
+	builder     builder.BuildService
 	provisioner provisioner.Provisioner
 	deployer    deployer.Deployer
 	logger      zerolog.Logger
@@ -26,6 +28,7 @@ type Engine struct {
 func NewEngine(
 	queue *queue.RedisQueue,
 	repo *state.Repository,
+	builder builder.BuildService,
 	provisioner provisioner.Provisioner,
 	deployer deployer.Deployer,
 	logger zerolog.Logger,
@@ -33,10 +36,56 @@ func NewEngine(
 	return &Engine{
 		queue:       queue,
 		repo:        repo,
+		builder:     builder,
 		provisioner: provisioner,
 		deployer:    deployer,
 		logger:      logger.With().Str("component", "orchestrator").Logger(),
 	}
+}
+
+// EnqueueBuildJob enqueues a build job to the queue
+func (e *Engine) EnqueueBuildJob(ctx context.Context, payload *queue.BuildPayload) error {
+	e.logger.Info().
+		Str("deployment_id", payload.DeploymentID).
+		Str("app_name", payload.AppName).
+		Str("repo_url", payload.RepoURL).
+		Msg("Enqueueing build job")
+
+	payloadMap := map[string]interface{}{
+		"deployment_id":  payload.DeploymentID,
+		"app_name":       payload.AppName,
+		"version":        payload.Version,
+		"repo_url":       payload.RepoURL,
+		"branch":         payload.Branch,
+		"commit_sha":     payload.CommitSHA,
+		"build_strategy": payload.BuildStrategy,
+		"dockerfile":     payload.Dockerfile,
+		"cloud":          payload.Cloud,
+		"region":         payload.Region,
+	}
+
+	job := &queue.Job{
+		ID:           uuid.New().String(),
+		Type:         queue.JobTypeBuild,
+		DeploymentID: payload.DeploymentID,
+		Payload:      payloadMap,
+		MaxAttempts:  3,
+	}
+
+	if err := e.queue.Enqueue(ctx, job); err != nil {
+		e.logger.Error().
+			Err(err).
+			Str("deployment_id", payload.DeploymentID).
+			Msg("Failed to enqueue build job")
+		return fmt.Errorf("enqueue build job: %w", err)
+	}
+
+	e.logger.Info().
+		Str("job_id", job.ID).
+		Str("deployment_id", payload.DeploymentID).
+		Msg("Build job enqueued successfully")
+
+	return nil
 }
 
 // EnqueueProvisionJob enqueues a provision job to the queue
@@ -192,6 +241,21 @@ func (e *Engine) EnqueueRollbackJob(ctx context.Context, payload *queue.Rollback
 		Msg("Rollback job enqueued successfully")
 
 	return nil
+}
+
+// parseBuildPayload parses a build job payload
+func parseBuildPayload(job *queue.Job) (*queue.BuildPayload, error) {
+	data, err := json.Marshal(job.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal payload: %w", err)
+	}
+
+	var payload queue.BuildPayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, fmt.Errorf("unmarshal payload: %w", err)
+	}
+
+	return &payload, nil
 }
 
 // parseProvisionPayload parses a provision job payload

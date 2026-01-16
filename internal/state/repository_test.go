@@ -18,7 +18,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err, "failed to create test database")
 
 	// Run migrations
-	err = db.AutoMigrate(&Deployment{}, &Infrastructure{}, &Build{})
+	err = db.AutoMigrate(&Deployment{}, &Infrastructure{}, &Build{}, &DeploymentLog{})
 	require.NoError(t, err, "failed to run migrations")
 
 	return db

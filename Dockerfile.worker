@@ -1,0 +1,45 @@
+# Build stage
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /app
+
+# Install git for go mod download (needed for private repos)
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the Worker binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /worker ./cmd/worker
+
+# Runtime stage
+FROM alpine:3.19
+
+WORKDIR /app
+
+# Install ca-certificates for HTTPS calls and kubectl/helm for deployments
+RUN apk add --no-cache ca-certificates tzdata curl
+
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
+
+# Install Helm
+RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sh
+
+# Create non-root user
+RUN adduser -D -g '' appuser
+USER appuser
+
+# Copy binary from builder
+COPY --from=builder /worker /app/worker
+
+# Copy templates if needed
+COPY --from=builder /app/templates /app/templates
+
+ENTRYPOINT ["/app/worker"]

@@ -126,47 +126,47 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 **Registry**: GCP Artifact Registry has 0.5 GB free storage/month, sufficient for MVP
 
 #### 1.5 Infrastructure Provisioner - GCP Only (Week 5)
-- [ ] Set up Pulumi project structure
-- [ ] Implement GCP VPC creation
+- [x] Set up Pulumi project structure
+- [x] Implement GCP VPC creation
   - Public and private subnets
   - Cloud Router
   - Cloud NAT
   - Firewall rules
-- [ ] Implement GKE cluster provisioning
+- [x] Implement GKE cluster provisioning
   - Node pool configuration (e2-small, 2 nodes)
   - Service account with minimal permissions
   - Cluster authentication
   - Autopilot or Standard mode (Standard for cost control)
-- [ ] Implement firewall rules (minimal ports)
-- [ ] Save Pulumi state to GCS backend
-- [ ] Implement infrastructure destroy logic
+- [x] Implement firewall rules (minimal ports)
+- [x] Save Pulumi state to GCS backend
+- [x] Implement infrastructure destroy logic
 - [ ] Write integration tests (creates and destroys real resources)
-- [ ] Add labels for all resources (cost tracking, environment)
+- [x] Add labels for all resources (cost tracking, environment)
 
 **Files**: `internal/provisioner/pulumi.go`, `internal/provisioner/gcp/`
 
 **Cost Control**: Use e2-small nodes (free tier eligible), 2 node minimum, preemptible VMs option
 
 #### 1.6 Kubernetes Deployer (Week 6)
-- [ ] Create Helm chart template generator
-- [ ] Implement Helm chart values population from analyzer output
-- [ ] Deploy Helm chart to Kubernetes using client-go
-- [ ] Implement pod health checking (wait for Ready status)
-- [ ] Create LoadBalancer service
-- [ ] Retrieve external IP from LoadBalancer
+- [x] Create Helm chart template generator
+- [x] Implement Helm chart values population from analyzer output
+- [x] Deploy Helm chart to Kubernetes using client-go
+- [x] Implement pod health checking (wait for Ready status)
+- [x] Create LoadBalancer service
+- [x] Retrieve external IP from LoadBalancer
 - [ ] Write integration tests with local kind cluster
-- [ ] Add deployment timeout handling (10 min max)
+- [x] Add deployment timeout handling (10 min max)
 
 **Files**: `internal/deployer/helm.go`, `templates/helm/base-app/`
 
 #### 1.7 Orchestrator (Week 6)
-- [ ] Implement deployment state machine
-- [ ] Create job queue with Redis
-- [ ] Implement worker process for async jobs
-- [ ] Coordinate analyzer → builder → provisioner → deployer flow
-- [ ] Implement error handling and rollback logic
-- [ ] Add retry logic with exponential backoff
-- [ ] Stream logs to database for retrieval
+- [x] Implement deployment state machine
+- [x] Create job queue with Redis
+- [x] Implement worker process for async jobs
+- [x] Coordinate analyzer → builder → provisioner → deployer flow
+- [x] Implement error handling and rollback logic
+- [x] Add retry logic with exponential backoff
+- [x] Stream logs to database for retrieval
 - [ ] Write end-to-end integration tests
 
 **Files**: `internal/orchestrator/engine.go`, `internal/orchestrator/worker.go`
@@ -199,7 +199,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 ### Tasks
 
 #### 2.1 Multi-Cloud Support (Week 7-8)
-- [ ] Refactor provisioner for cloud provider abstraction (already GCP-based)
+- [x] Refactor provisioner for cloud provider abstraction (GCP implementation complete)
 - [ ] Implement AWS provisioner
   - VPC creation
   - EKS cluster
@@ -461,7 +461,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 | Phase | Duration | Key Deliverable | Status |
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
-| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (65%)** |
+| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (85%)** |
 | **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
@@ -470,24 +470,45 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 **✅ Completed:**
 - 1.1 Database & State Management (100%)
-- 1.2 API Layer (85% - missing Swagger docs & integration tests)
+- 1.2 API Layer (90% - missing Swagger docs & some integration tests)
 - 1.3 Repository Analyzer (90% - missing integration tests with real repos)
 - 1.4 Image Builder (85% - missing integration tests & timeout handling)
+- 1.5 Infrastructure Provisioner - GCP (95% - missing integration tests)
+  - VPC, Subnet, Router, NAT
+  - GKE cluster with node pools
+  - Service accounts with IAM bindings
+  - Firewall rules
+  - Pulumi Automation API integration
+  - Infrastructure state tracking
+- 1.6 Kubernetes Deployer (90% - missing integration tests)
+  - Helm chart deployment
+  - Pod health checking
+  - LoadBalancer IP retrieval
+  - Rollback support
+- 1.7 Orchestrator (85% - missing E2E tests)
+  - Redis job queue (Build, Provision, Deploy, Destroy, Rollback jobs)
+  - Concurrent worker processing with round-robin
+  - Retry logic with exponential backoff
+  - Auto-rollback on failed deployments
+  - Per-phase deployment logging
 
 **🔄 In Progress:**
-- Code analysis features (current branch: `feature/code-analysis`)
-- Advanced builder strategies and registry integrations
+- End-to-end integration testing
+- Sample app deployments validation
 
 **⏳ Next Up:**
-- 1.5 Infrastructure Provisioner - GCP VPC & GKE (0%)
-- 1.6 Kubernetes Deployer - Helm charts (0%)
-- 1.7 Orchestrator - Redis job queue & worker (10% - skeleton only)
 - 1.8 MVP Testing & Validation (0%)
+  - Deploy sample Node.js/Python apps
+  - Verify external URL accessibility
+  - Test deployment lifecycle (create, update, rollback, destroy)
+  - Load testing
 
 **Recent Commits:**
+- `082733a` - fix critical implementation gaps in deployer and orchestrator
+- `505e2df` - wire API to orchestrator for infrastructure provisioning
+- `411127f` - added pulumi layer
+- `f50586b` - adding provisioning infra layer
 - `2469098` - production ready with advanced features
-- `1f6e2a8` - code analysis first implementation
-- `8a83099` - code implemented database and base api
 
 ---
 

@@ -178,6 +178,7 @@ type ProvisionRequestInternal struct {
 	Version      string
 	Cloud        string
 	Region       string
+	GCPProject   string // GCP project ID for IAM bindings
 	Config       *ProvisionConfigInternal
 }
 

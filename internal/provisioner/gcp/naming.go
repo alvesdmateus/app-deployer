@@ -31,10 +31,24 @@ func generateStackName(deploymentID string) string {
 
 // generateClusterName generates a GKE cluster name
 // Format: deployer-cluster-{app}-{id-short}
+// Note: GKE cluster names must be <= 40 characters
 func generateClusterName(appName, deploymentID string) string {
 	shortID := getShortID(deploymentID)
 	sanitized := sanitizeName(appName)
-	return fmt.Sprintf("deployer-cluster-%s-%s", sanitized, shortID)
+
+	// GKE cluster names must be <= 40 characters
+	// Prefix "deployer-cluster-" = 16 chars, "-{shortID}" = 9 chars
+	// Available for app name: 40 - 16 - 9 = 15 chars
+	const maxClusterLen = 40
+	prefix := "deployer-cluster-"
+	suffix := "-" + shortID
+
+	maxAppLen := maxClusterLen - len(prefix) - len(suffix)
+	if len(sanitized) > maxAppLen {
+		sanitized = strings.TrimRight(sanitized[:maxAppLen], "-")
+	}
+
+	return fmt.Sprintf("%s%s%s", prefix, sanitized, suffix)
 }
 
 // generateVPCName generates a VPC network name
@@ -71,10 +85,24 @@ func generateNATName(appName, deploymentID string) string {
 
 // generateNodePoolName generates a GKE node pool name
 // Format: deployer-pool-{app}-{id-short}
+// Note: GKE node pool names must be <= 40 characters
 func generateNodePoolName(appName, deploymentID string) string {
 	shortID := getShortID(deploymentID)
 	sanitized := sanitizeName(appName)
-	return fmt.Sprintf("deployer-pool-%s-%s", sanitized, shortID)
+
+	// GKE node pool names must be <= 40 characters
+	// Prefix "deployer-pool-" = 14 chars, "-{shortID}" = 9 chars
+	// Available for app name: 40 - 14 - 9 = 17 chars
+	const maxPoolLen = 40
+	prefix := "deployer-pool-"
+	suffix := "-" + shortID
+
+	maxAppLen := maxPoolLen - len(prefix) - len(suffix)
+	if len(sanitized) > maxAppLen {
+		sanitized = strings.TrimRight(sanitized[:maxAppLen], "-")
+	}
+
+	return fmt.Sprintf("%s%s%s", prefix, sanitized, suffix)
 }
 
 // generateServiceAccountName generates a service account name

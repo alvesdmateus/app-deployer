@@ -176,8 +176,8 @@ func setDefaults() {
 	viper.SetDefault("server.log_level", "info")
 
 	// Database defaults
-	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 5432)
+	viper.SetDefault("database.host", "127.0.0.1")
+	viper.SetDefault("database.port", 5434)
 	viper.SetDefault("database.user", "deployer")
 	viper.SetDefault("database.password", "deployer_dev_password")
 	viper.SetDefault("database.dbname", "app_deployer")

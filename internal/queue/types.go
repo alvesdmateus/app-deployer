@@ -8,6 +8,9 @@ import (
 type JobType string
 
 const (
+	// JobTypeBuild represents a container image build job
+	JobTypeBuild JobType = "build"
+
 	// JobTypeProvision represents an infrastructure provisioning job
 	JobTypeProvision JobType = "provision"
 
@@ -30,6 +33,41 @@ type Job struct {
 	CreatedAt    time.Time              `json:"created_at"`
 	Attempts     int                    `json:"attempts"`
 	MaxAttempts  int                    `json:"max_attempts"`
+	LastError    string                 `json:"last_error,omitempty"`    // Last error message for debugging
+	NextRetryAt  time.Time              `json:"next_retry_at,omitempty"` // When this job should be retried
+}
+
+// Backoff configuration
+const (
+	// BaseBackoffDelay is the initial delay for the first retry (10 seconds)
+	BaseBackoffDelay = 10 * time.Second
+
+	// MaxBackoffDelay is the maximum delay between retries (5 minutes)
+	MaxBackoffDelay = 5 * time.Minute
+
+	// BackoffMultiplier is the multiplier for exponential backoff
+	BackoffMultiplier = 2.0
+
+	// BackoffJitterPercent adds randomness to prevent thundering herd (10%)
+	BackoffJitterPercent = 0.1
+)
+
+// BuildPayload contains data for a build job
+type BuildPayload struct {
+	DeploymentID string `json:"deployment_id"`
+	AppName      string `json:"app_name"`
+	Version      string `json:"version"`
+	RepoURL      string `json:"repo_url"`
+	Branch       string `json:"branch,omitempty"`   // Default: main
+	CommitSHA    string `json:"commit_sha,omitempty"`
+
+	// Build configuration
+	BuildStrategy string `json:"build_strategy,omitempty"` // buildpacks, nixpacks, dockerfile
+	Dockerfile    string `json:"dockerfile,omitempty"`     // Path to Dockerfile if using dockerfile strategy
+
+	// Cloud configuration for subsequent provisioning
+	Cloud  string `json:"cloud"`
+	Region string `json:"region"`
 }
 
 // ProvisionPayload contains data for a provision job

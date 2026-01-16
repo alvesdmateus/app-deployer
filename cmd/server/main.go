@@ -63,6 +63,7 @@ func main() {
 		&state.Deployment{},
 		&state.Infrastructure{},
 		&state.Build{},
+		&state.DeploymentLog{},
 	}
 
 	if err := database.Migrate(db, models...); err != nil {
