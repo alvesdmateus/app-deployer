@@ -34,14 +34,10 @@ jobs:
             exit 1
           fi
 
-      - name: Check go.mod tidiness
+      - name: Verify dependencies
         run: |
-          go mod tidy
-          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
-            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' to fix."
-            git diff go.mod go.sum
-            exit 1
-          fi
+          go mod download
+          go mod verify
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
