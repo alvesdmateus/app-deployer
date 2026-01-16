@@ -3,8 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/alvesdmateus/app-deployer/internal/analyzer"
 	"github.com/alvesdmateus/app-deployer/internal/builder"
 	"github.com/alvesdmateus/app-deployer/internal/builder/registry"
@@ -14,6 +12,8 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/state"
 	"github.com/alvesdmateus/app-deployer/pkg/config"
 	"github.com/alvesdmateus/app-deployer/pkg/database"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )

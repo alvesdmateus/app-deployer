@@ -283,9 +283,9 @@ func (h *HelmDeployer) GetStatus(ctx context.Context, namespace, releaseName str
 	var helmStatus struct {
 		Name string `json:"name"`
 		Info struct {
-			Status        string    `json:"status"`
-			LastDeployed  time.Time `json:"last_deployed"`
-			Description   string    `json:"description"`
+			Status       string    `json:"status"`
+			LastDeployed time.Time `json:"last_deployed"`
+			Description  string    `json:"description"`
 		} `json:"info"`
 		Version int `json:"version"`
 	}
@@ -485,9 +485,9 @@ func (h *HelmDeployer) generateValues(req *DeployRequest, infra *state.Infrastru
 		}
 
 		values["autoscaling"] = map[string]interface{}{
-			"enabled":                       true,
-			"minReplicas":                   minReplicas,
-			"maxReplicas":                   maxReplicas,
+			"enabled":                        true,
+			"minReplicas":                    minReplicas,
+			"maxReplicas":                    maxReplicas,
 			"targetCPUUtilizationPercentage": targetCPU,
 		}
 

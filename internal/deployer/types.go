@@ -63,11 +63,11 @@ type DeployConfig struct {
 	LivenessPath    string
 
 	// Advanced options
-	EnableHPA     bool // Horizontal Pod Autoscaler
-	MinReplicas   int
-	MaxReplicas   int
-	TargetCPU     int // Target CPU utilization percentage
-	TargetMemory  int // Target memory utilization percentage
+	EnableHPA    bool // Horizontal Pod Autoscaler
+	MinReplicas  int
+	MaxReplicas  int
+	TargetCPU    int // Target CPU utilization percentage
+	TargetMemory int // Target memory utilization percentage
 
 	// Labels and annotations
 	Labels      map[string]string

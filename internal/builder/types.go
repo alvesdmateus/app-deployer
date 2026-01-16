@@ -67,9 +67,9 @@ type BuildService interface {
 
 // BuildOptions contains optional build parameters
 type BuildOptions struct {
-	UseCache       bool
+	UseCache         bool
 	CustomDockerfile string
-	BuildArgs      map[string]string
-	Labels         map[string]string
-	Timeout        time.Duration
+	BuildArgs        map[string]string
+	Labels           map[string]string
+	Timeout          time.Duration
 }

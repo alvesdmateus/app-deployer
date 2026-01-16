@@ -58,7 +58,7 @@ type BuildPayload struct {
 	AppName      string `json:"app_name"`
 	Version      string `json:"version"`
 	RepoURL      string `json:"repo_url"`
-	Branch       string `json:"branch,omitempty"`   // Default: main
+	Branch       string `json:"branch,omitempty"` // Default: main
 	CommitSHA    string `json:"commit_sha,omitempty"`
 
 	// Build configuration

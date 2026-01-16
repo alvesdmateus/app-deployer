@@ -43,11 +43,11 @@ type ProvisionRequest struct {
 // ProvisionConfig holds optional configuration for provisioning
 type ProvisionConfig struct {
 	// GKE configuration
-	NodeCount     int
-	MachineType   string
-	Preemptible   bool
-	DiskSize      int
-	DiskType      string
+	NodeCount   int
+	MachineType string
+	Preemptible bool
+	DiskSize    int
+	DiskType    string
 
 	// Resource labels
 	Labels map[string]string

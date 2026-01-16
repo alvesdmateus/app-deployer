@@ -25,7 +25,6 @@ func Execute() {
 
 func init() {
 	// Add subcommands here
-	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(deployCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(logsCmd)
