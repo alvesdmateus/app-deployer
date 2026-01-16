@@ -39,9 +39,8 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 #### CI/CD Setup
 - [x] Create GitHub Actions workflows
-  - `.github/workflows/test.yml` - Run tests on PR
-  - `.github/workflows/lint.yml` - Linting and formatting checks
-  - `.github/workflows/build.yml` - Build and push Docker images
+  - `.github/workflows/ci.yml` - Unified CI (lint, test, build) on all branches
+  - `.github/workflows/build.yml` - Multi-platform builds and Docker images
 - [ ] Set up branch protection rules
 - [ ] Configure dependabot for dependency updates
 
@@ -167,9 +166,9 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [x] Implement error handling and rollback logic
 - [x] Add retry logic with exponential backoff
 - [x] Stream logs to database for retrieval
-- [ ] Write end-to-end integration tests
+- [x] Write end-to-end integration tests
 
-**Files**: `internal/orchestrator/engine.go`, `internal/orchestrator/worker.go`
+**Files**: `internal/orchestrator/engine.go`, `internal/orchestrator/worker.go`, `tests/e2e/`
 
 #### 1.8 MVP Testing & Validation
 - [ ] Deploy sample Node.js Express app end-to-end
@@ -461,7 +460,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 | Phase | Duration | Key Deliverable | Status |
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
-| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (85%)** |
+| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (90%)** |
 | **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
@@ -485,16 +484,17 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - Pod health checking
   - LoadBalancer IP retrieval
   - Rollback support
-- 1.7 Orchestrator (85% - missing E2E tests)
+- 1.7 Orchestrator (100%)
   - Redis job queue (Build, Provision, Deploy, Destroy, Rollback jobs)
   - Concurrent worker processing with round-robin
   - Retry logic with exponential backoff
   - Auto-rollback on failed deployments
   - Per-phase deployment logging
+  - E2E tests added
 
 **🔄 In Progress:**
-- End-to-end integration testing
 - Sample app deployments validation
+- Integration tests for remaining components
 
 **⏳ Next Up:**
 - 1.8 MVP Testing & Validation (0%)
@@ -504,11 +504,11 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - Load testing
 
 **Recent Commits:**
+- `ad51023` - remove redundant lint and test workflows
+- `dd43391` - add unified CI workflow for all branches
+- `e6e4e94` - add E2E tests and enhance orchestrator infrastructure
+- `9b52522` - fix GKE provisioning and auth issues for E2E tests
 - `082733a` - fix critical implementation gaps in deployer and orchestrator
-- `505e2df` - wire API to orchestrator for infrastructure provisioning
-- `411127f` - added pulumi layer
-- `f50586b` - adding provisioning infra layer
-- `2469098` - production ready with advanced features
 
 ---
 
@@ -583,8 +583,8 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 ## Success Metrics
 
 ### MVP Success Criteria (Phase 1)
-- [ ] Deploy a Node.js app from GitHub URL to AWS
-- [ ] Return external URL in < 10 minutes
+- [ ] Deploy a Node.js app from GitHub URL to GCP GKE
+- [ ] Return external IP in < 15 minutes
 - [ ] Application accessible and healthy
 - [ ] Clean resource destruction
 - [ ] Zero manual intervention required
