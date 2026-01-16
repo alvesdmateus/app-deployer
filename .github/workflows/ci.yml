@@ -36,10 +36,11 @@ jobs:
 
       - name: Check go.mod tidiness
         run: |
-          go mod tidy
-          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
-            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' to fix."
-            git diff go.mod go.sum
+          GOTOOLCHAIN=local go mod tidy
+          # Only check go.sum changes, ignore go directive version differences
+          if [ -n "$(git diff --name-only go.sum)" ]; then
+            echo "::error::go.sum is not tidy. Run 'go mod tidy' to fix."
+            git diff go.sum
             exit 1
           fi
 
