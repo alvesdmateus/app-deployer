@@ -20,6 +20,7 @@ type Config struct {
 	Worker      WorkerConfig
 	Auth        AuthConfig
 	RateLimit   RateLimitConfig
+	Scanner     ScannerConfig
 }
 
 // AuthConfig holds JWT authentication configuration
@@ -34,6 +35,14 @@ type RateLimitConfig struct {
 	Enabled           bool
 	RequestsPerSecond float64
 	BurstSize         int
+}
+
+// ScannerConfig holds vulnerability scanning configuration
+type ScannerConfig struct {
+	Enabled        bool
+	FailOnCritical bool
+	FailOnHigh     bool
+	IgnoreUnfixed  bool
 }
 
 // ServerConfig holds HTTP server configuration
@@ -182,6 +191,12 @@ func Load() (*Config, error) {
 			RequestsPerSecond: viper.GetFloat64("ratelimit.requests_per_second"),
 			BurstSize:         viper.GetInt("ratelimit.burst_size"),
 		},
+		Scanner: ScannerConfig{
+			Enabled:        viper.GetBool("scanner.enabled"),
+			FailOnCritical: viper.GetBool("scanner.fail_on_critical"),
+			FailOnHigh:     viper.GetBool("scanner.fail_on_high"),
+			IgnoreUnfixed:  viper.GetBool("scanner.ignore_unfixed"),
+		},
 	}
 
 	// Override database config from DATABASE_URL if present
@@ -253,6 +268,12 @@ func setDefaults() {
 	viper.SetDefault("ratelimit.enabled", true)
 	viper.SetDefault("ratelimit.requests_per_second", 10.0)
 	viper.SetDefault("ratelimit.burst_size", 20)
+
+	// Scanner defaults
+	viper.SetDefault("scanner.enabled", true)
+	viper.SetDefault("scanner.fail_on_critical", true)
+	viper.SetDefault("scanner.fail_on_high", false)
+	viper.SetDefault("scanner.ignore_unfixed", true)
 }
 
 // GetDatabaseDSN returns the PostgreSQL connection string

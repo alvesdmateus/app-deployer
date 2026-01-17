@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/alvesdmateus/app-deployer/internal/builder/dockerfile"
 	"github.com/alvesdmateus/app-deployer/internal/builder/registry"
+	"github.com/alvesdmateus/app-deployer/internal/builder/scanner"
 	"github.com/alvesdmateus/app-deployer/internal/builder/strategies"
 )
 
@@ -19,12 +21,14 @@ type Service struct {
 	buildStrategy       BuildStrategy
 	registryClient      RegistryClient
 	tracker             BuildTracker
+	scanner             scanner.Scanner
 }
 
 // ServiceConfig contains configuration for the build service
 type ServiceConfig struct {
 	RegistryConfig registry.Config
 	StrategyType   strategies.StrategyType
+	ScannerConfig  scanner.ScanConfig
 }
 
 // NewService creates a new build service
@@ -46,11 +50,19 @@ func NewService(config ServiceConfig, tracker BuildTracker) (*Service, error) {
 		return nil, fmt.Errorf("failed to create registry client: %w", err)
 	}
 
+	// Create vulnerability scanner
+	scanConfig := config.ScannerConfig
+	if scanConfig.Timeout == 0 {
+		scanConfig.Timeout = 10 * time.Minute
+	}
+	trivyScanner := scanner.NewTrivyScanner(scanConfig)
+
 	return &Service{
 		dockerfileGenerator: generator,
 		buildStrategy:       strategy,
 		registryClient:      registryClient,
 		tracker:             tracker,
+		scanner:             trivyScanner,
 	}, nil
 }
 
@@ -59,8 +71,9 @@ func NewService(config ServiceConfig, tracker BuildTracker) (*Service, error) {
 // 2. Generate Dockerfile
 // 3. Build container image
 // 4. Tag image for registry
-// 5. Push to registry
-// 6. Update build status
+// 5. Scan for vulnerabilities
+// 6. Push to registry
+// 7. Update build status
 func (s *Service) BuildImage(ctx context.Context, buildCtx *BuildContext) (*BuildResult, error) {
 	log.Info().
 		Str("deploymentID", buildCtx.DeploymentID).
@@ -142,7 +155,41 @@ func (s *Service) BuildImage(ctx context.Context, buildCtx *BuildContext) (*Buil
 
 	result.ImageTag = registryTag
 
-	// Step 5: Push to registry
+	// Step 5: Scan for vulnerabilities
+	if s.scanner != nil && s.scanner.IsAvailable() {
+		log.Info().
+			Str("imageTag", registryTag).
+			Msg("Scanning image for vulnerabilities")
+
+		progressMsg = fmt.Sprintf("Scanning image for vulnerabilities: %s\n", registryTag)
+		_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, progressMsg)
+
+		scanResult, scanErr := s.scanner.Scan(ctx, registryTag)
+		if scanErr != nil {
+			result.BuildLog += fmt.Sprintf("\nVulnerability scan failed: %v\n", scanErr)
+			_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, result.BuildLog)
+			return nil, fmt.Errorf("vulnerability scan failed: %w", scanErr)
+		}
+
+		// Add scan results to build log
+		scanSummary := scanResult.FormatSummary()
+		result.BuildLog += "\n" + scanSummary
+		_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, scanSummary)
+
+		if !scanResult.Pass {
+			return nil, fmt.Errorf("vulnerability scan failed: %s", scanResult.FailureReason)
+		}
+
+		progressMsg = fmt.Sprintf("Vulnerability scan passed (Critical: %d, High: %d, Medium: %d, Low: %d)\n",
+			scanResult.VulnCounts.Critical, scanResult.VulnCounts.High,
+			scanResult.VulnCounts.Medium, scanResult.VulnCounts.Low)
+		_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, progressMsg)
+	} else {
+		progressMsg = "Vulnerability scanning skipped (scanner not available)\n"
+		_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, progressMsg)
+	}
+
+	// Step 6: Push to registry
 	log.Info().
 		Str("imageTag", registryTag).
 		Msg("Pushing image to registry")
@@ -157,7 +204,7 @@ func (s *Service) BuildImage(ctx context.Context, buildCtx *BuildContext) (*Buil
 	progressMsg = "Image pushed successfully to registry\n"
 	_ = s.tracker.UpdateProgress(ctx, buildCtx.BuildID, progressMsg)
 
-	// Step 6: Complete build tracking
+	// Step 7: Complete build tracking
 	if err := s.tracker.CompleteBuild(ctx, buildCtx.BuildID, result); err != nil {
 		log.Error().
 			Err(err).
