@@ -216,16 +216,16 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 **Files**: `internal/provisioner/interface.go`, `internal/provisioner/gcp/`, `internal/provisioner/azure/`
 
 #### 2.2 Security Enhancements (Week 8)
-- [ ] Integrate Trivy for vulnerability scanning
-- [ ] Scan images before deployment
-- [ ] Fail deployment on critical vulnerabilities (configurable)
+- [x] Integrate Trivy for vulnerability scanning
+- [x] Scan images before deployment
+- [x] Fail deployment on critical vulnerabilities (configurable)
 - [ ] Implement secrets management
   - Integration with AWS Secrets Manager
   - Integration with GCP Secret Manager
   - Integration with Azure Key Vault
 - [ ] Add external-secrets operator to Kubernetes deployments
-- [ ] Implement API authentication with JWT
-- [ ] Add rate limiting to API endpoints
+- [x] Implement API authentication with JWT
+- [x] Add rate limiting to API endpoints
 - [ ] Security audit of all components
 
 **Files**: `internal/builder/scanner.go`, `internal/secrets/`
@@ -461,7 +461,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
 | **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (95%)** |
-| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
+| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (Security: 60%)** |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
 
