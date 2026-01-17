@@ -19,6 +19,7 @@ type Config struct {
 	Deployer    DeployerConfig
 	Worker      WorkerConfig
 	Auth        AuthConfig
+	RateLimit   RateLimitConfig
 }
 
 // AuthConfig holds JWT authentication configuration
@@ -26,6 +27,13 @@ type AuthConfig struct {
 	JWTSecret          string
 	JWTExpirationHours int
 	Enabled            bool
+}
+
+// RateLimitConfig holds rate limiting configuration
+type RateLimitConfig struct {
+	Enabled           bool
+	RequestsPerSecond float64
+	BurstSize         int
 }
 
 // ServerConfig holds HTTP server configuration
@@ -169,6 +177,11 @@ func Load() (*Config, error) {
 			JWTExpirationHours: viper.GetInt("auth.jwt_expiration_hours"),
 			Enabled:            viper.GetBool("auth.enabled"),
 		},
+		RateLimit: RateLimitConfig{
+			Enabled:           viper.GetBool("ratelimit.enabled"),
+			RequestsPerSecond: viper.GetFloat64("ratelimit.requests_per_second"),
+			BurstSize:         viper.GetInt("ratelimit.burst_size"),
+		},
 	}
 
 	// Override database config from DATABASE_URL if present
@@ -235,6 +248,11 @@ func setDefaults() {
 	viper.SetDefault("auth.jwt_secret", "change-me-in-production") // Must be overridden in production
 	viper.SetDefault("auth.jwt_expiration_hours", 24)
 	viper.SetDefault("auth.enabled", false) // Disabled by default for development
+
+	// Rate limit defaults
+	viper.SetDefault("ratelimit.enabled", true)
+	viper.SetDefault("ratelimit.requests_per_second", 10.0)
+	viper.SetDefault("ratelimit.burst_size", 20)
 }
 
 // GetDatabaseDSN returns the PostgreSQL connection string

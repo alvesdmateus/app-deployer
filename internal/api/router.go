@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/alvesdmateus/app-deployer/internal/analyzer"
 	"github.com/alvesdmateus/app-deployer/internal/builder"
@@ -137,6 +138,15 @@ func (s *Server) setupRoutes() {
 	s.router.Use(RequestLogger)
 	s.router.Use(CORSMiddleware())
 	s.router.Use(middleware.RealIP)
+
+	// Rate limiting (applied globally)
+	rateLimitConfig := RateLimitConfig{
+		Enabled:           s.cfg.RateLimit.Enabled,
+		RequestsPerSecond: s.cfg.RateLimit.RequestsPerSecond,
+		BurstSize:         s.cfg.RateLimit.BurstSize,
+		CleanupInterval:   5 * time.Minute,
+	}
+	s.router.Use(RateLimitMiddleware(rateLimitConfig))
 
 	// Health check endpoints (always public)
 	s.router.Get("/health", s.healthCheck)
