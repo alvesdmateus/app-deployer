@@ -104,7 +104,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [x] Determine default ports by framework
 - [x] Estimate resource requirements (basic heuristics)
 - [x] Write unit tests with fixture repositories
-- [ ] Integration test with real GitHub repos
+- [x] Integration test with real GitHub repos
 
 **Files**: `internal/analyzer/analyzer.go`, `internal/analyzer/detectors/`
 
@@ -116,8 +116,8 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [x] Push images to GCP Artifact Registry (free tier) or Harbor
 - [x] Capture and store build logs
 - [x] Handle build failures gracefully
-- [ ] Write integration tests with sample apps
-- [ ] Add build timeout handling (30 min max)
+- [x] Write integration tests with sample apps
+- [x] Add build timeout handling (30 min max)
 
 **Files**: `internal/builder/buildpack.go`, `internal/builder/docker.go`
 
@@ -153,7 +153,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [x] Implement pod health checking (wait for Ready status)
 - [x] Create LoadBalancer service
 - [x] Retrieve external IP from LoadBalancer
-- [ ] Write integration tests with local kind cluster
+- [x] Write integration tests with local kind cluster
 - [x] Add deployment timeout handling (10 min max)
 
 **Files**: `internal/deployer/helm.go`, `templates/helm/base-app/`
@@ -460,7 +460,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 | Phase | Duration | Key Deliverable | Status |
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
-| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (90%)** |
+| **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (95%)** |
 | **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
@@ -469,21 +469,27 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 **✅ Completed:**
 - 1.1 Database & State Management (100%)
-- 1.2 API Layer (90% - missing Swagger docs & some integration tests)
-- 1.3 Repository Analyzer (90% - missing integration tests with real repos)
-- 1.4 Image Builder (85% - missing integration tests & timeout handling)
-- 1.5 Infrastructure Provisioner - GCP (95% - missing integration tests)
+- 1.2 API Layer (90% - missing Swagger docs)
+- 1.3 Repository Analyzer (100%)
+  - Language/framework detection
+  - Integration tests with real GitHub repos
+- 1.4 Image Builder (100%)
+  - Docker/Buildpack builds
+  - Build timeout handling (30 min max)
+  - Integration tests with sample apps
+- 1.5 Infrastructure Provisioner - GCP (95% - missing E2E integration tests)
   - VPC, Subnet, Router, NAT
   - GKE cluster with node pools
   - Service accounts with IAM bindings
   - Firewall rules
   - Pulumi Automation API integration
   - Infrastructure state tracking
-- 1.6 Kubernetes Deployer (90% - missing integration tests)
+- 1.6 Kubernetes Deployer (100%)
   - Helm chart deployment
   - Pod health checking
   - LoadBalancer IP retrieval
   - Rollback support
+  - Integration tests with kind cluster
 - 1.7 Orchestrator (100%)
   - Redis job queue (Build, Provision, Deploy, Destroy, Rollback jobs)
   - Concurrent worker processing with round-robin
@@ -494,7 +500,6 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 **🔄 In Progress:**
 - Sample app deployments validation
-- Integration tests for remaining components
 
 **⏳ Next Up:**
 - 1.8 MVP Testing & Validation (0%)

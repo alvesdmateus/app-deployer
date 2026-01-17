@@ -22,6 +22,7 @@ import (
 type Server struct {
 	router                *chi.Mux
 	db                    *gorm.DB
+	cfg                   *config.Config
 	redisQueue            *queue.RedisQueue
 	orchestratorClient    *orchestrator.Client
 	deploymentHandler     *DeploymentHandler
@@ -29,6 +30,7 @@ type Server struct {
 	buildHandler          *BuildHandler
 	analyzerHandler       *AnalyzerHandler
 	builderHandler        *BuilderHandler
+	authHandler           *AuthHandler
 }
 
 // NewServer creates a new API server
@@ -87,6 +89,7 @@ func NewServer(db *gorm.DB) *Server {
 	s := &Server{
 		router:                chi.NewRouter(),
 		db:                    db,
+		cfg:                   cfg,
 		redisQueue:            redisQueue,
 		orchestratorClient:    orchClient,
 		deploymentHandler:     NewDeploymentHandler(repo, orchClient),
@@ -94,6 +97,7 @@ func NewServer(db *gorm.DB) *Server {
 		buildHandler:          NewBuildHandler(repo),
 		analyzerHandler:       NewAnalyzerHandler(),
 		builderHandler:        NewBuilderHandler(buildService, analyzer),
+		authHandler:           NewAuthHandler(db, &cfg.Auth),
 	}
 
 	s.setupRoutes()
@@ -134,60 +138,80 @@ func (s *Server) setupRoutes() {
 	s.router.Use(CORSMiddleware())
 	s.router.Use(middleware.RealIP)
 
-	// Health check endpoints
+	// Health check endpoints (always public)
 	s.router.Get("/health", s.healthCheck)
 	s.router.Get("/health/live", s.livenessCheck)
 	s.router.Get("/health/ready", s.readinessCheck)
 
 	// API v1 routes
 	s.router.Route("/api/v1", func(r chi.Router) {
-		// Deployment routes
-		r.Route("/deployments", func(r chi.Router) {
-			r.Get("/", s.deploymentHandler.ListDeployments)
-			r.Post("/", s.deploymentHandler.CreateDeployment)
-			r.Get("/status/{status}", s.deploymentHandler.GetDeploymentsByStatus)
+		// Auth routes (public)
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", s.authHandler.Register)
+			r.Post("/login", s.authHandler.Login)
 
-			r.Route("/{id}", func(r chi.Router) {
-				r.Get("/", s.deploymentHandler.GetDeployment)
-				r.Delete("/", s.deploymentHandler.DeleteDeployment)
-				r.Patch("/status", s.deploymentHandler.UpdateDeploymentStatus)
-
-				// Orchestration endpoints
-				r.Post("/deploy", s.deploymentHandler.StartDeployment)
-				r.Post("/rollback", s.deploymentHandler.TriggerRollback)
-
-				// Logs endpoint
-				r.Get("/logs", s.deploymentHandler.GetDeploymentLogs)
-
-				// Infrastructure sub-routes
-				r.Get("/infrastructure", s.infrastructureHandler.GetInfrastructure)
-
-				// Build sub-routes
-				r.Get("/builds/latest", s.buildHandler.GetLatestBuild)
+			// Protected auth routes
+			r.Group(func(r chi.Router) {
+				r.Use(JWTAuthMiddleware(s.db, &s.cfg.Auth))
+				r.Get("/me", s.authHandler.GetCurrentUser)
+				r.Post("/api-keys", s.authHandler.CreateAPIKey)
+				r.Get("/api-keys", s.authHandler.ListAPIKeys)
+				r.Delete("/api-keys/{id}", s.authHandler.RevokeAPIKey)
 			})
 		})
 
-		// Analyzer routes
-		r.Route("/analyze", func(r chi.Router) {
-			r.Post("/", s.analyzerHandler.AnalyzeSourceCode)
-			r.Post("/upload", s.analyzerHandler.UploadAndAnalyze)
-			r.Get("/languages", s.analyzerHandler.GetSupportedLanguages)
-		})
+		// Protected routes (require authentication when auth is enabled)
+		r.Group(func(r chi.Router) {
+			r.Use(JWTAuthMiddleware(s.db, &s.cfg.Auth))
 
-		// Build routes
-		r.Route("/builds", func(r chi.Router) {
-			r.Post("/", s.builderHandler.BuildImage)
-			r.Post("/generate-dockerfile", s.builderHandler.GenerateDockerfile)
+			// Deployment routes
+			r.Route("/deployments", func(r chi.Router) {
+				r.Get("/", s.deploymentHandler.ListDeployments)
+				r.Post("/", s.deploymentHandler.CreateDeployment)
+				r.Get("/status/{status}", s.deploymentHandler.GetDeploymentsByStatus)
 
-			r.Route("/{buildID}", func(r chi.Router) {
-				r.Get("/logs", s.builderHandler.GetBuildLogs)
-				r.Post("/cancel", s.builderHandler.CancelBuild)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", s.deploymentHandler.GetDeployment)
+					r.Delete("/", s.deploymentHandler.DeleteDeployment)
+					r.Patch("/status", s.deploymentHandler.UpdateDeploymentStatus)
+
+					// Orchestration endpoints
+					r.Post("/deploy", s.deploymentHandler.StartDeployment)
+					r.Post("/rollback", s.deploymentHandler.TriggerRollback)
+
+					// Logs endpoint
+					r.Get("/logs", s.deploymentHandler.GetDeploymentLogs)
+
+					// Infrastructure sub-routes
+					r.Get("/infrastructure", s.infrastructureHandler.GetInfrastructure)
+
+					// Build sub-routes
+					r.Get("/builds/latest", s.buildHandler.GetLatestBuild)
+				})
 			})
-		})
 
-		// Orchestrator routes
-		r.Route("/orchestrator", func(r chi.Router) {
-			r.Get("/stats", s.deploymentHandler.GetQueueStats)
+			// Analyzer routes
+			r.Route("/analyze", func(r chi.Router) {
+				r.Post("/", s.analyzerHandler.AnalyzeSourceCode)
+				r.Post("/upload", s.analyzerHandler.UploadAndAnalyze)
+				r.Get("/languages", s.analyzerHandler.GetSupportedLanguages)
+			})
+
+			// Build routes
+			r.Route("/builds", func(r chi.Router) {
+				r.Post("/", s.builderHandler.BuildImage)
+				r.Post("/generate-dockerfile", s.builderHandler.GenerateDockerfile)
+
+				r.Route("/{buildID}", func(r chi.Router) {
+					r.Get("/logs", s.builderHandler.GetBuildLogs)
+					r.Post("/cancel", s.builderHandler.CancelBuild)
+				})
+			})
+
+			// Orchestrator routes
+			r.Route("/orchestrator", func(r chi.Router) {
+				r.Get("/stats", s.deploymentHandler.GetQueueStats)
+			})
 		})
 	})
 }

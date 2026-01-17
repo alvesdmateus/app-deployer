@@ -108,3 +108,35 @@ type DeploymentLog struct {
 	Timestamp    time.Time `gorm:"not null;index"`          // When the log was created
 	CreatedAt    time.Time
 }
+
+// User represents an authenticated user in the system
+type User struct {
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey"`
+	Email        string    `gorm:"not null;uniqueIndex"`
+	PasswordHash string    `gorm:"not null"`
+	Name         string
+	Role         string         `gorm:"not null;default:user"` // admin, user
+	Active       bool           `gorm:"not null;default:true"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+
+	// Relationships
+	APIKeys []APIKey `gorm:"foreignKey:UserID"`
+}
+
+// APIKey represents an API key for programmatic access
+type APIKey struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index"`
+	Name      string    `gorm:"not null"`           // Friendly name for the key
+	KeyHash   string    `gorm:"not null;index"`     // SHA-256 hash of the key
+	KeyPrefix string    `gorm:"not null"`           // First 8 chars for identification
+	Scopes    string    `gorm:"type:text"`          // Comma-separated list of scopes
+	ExpiresAt *time.Time
+	LastUsed  *time.Time
+	Active    bool           `gorm:"not null;default:true"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}

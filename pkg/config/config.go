@@ -18,6 +18,14 @@ type Config struct {
 	Provisioner ProvisionerConfig
 	Deployer    DeployerConfig
 	Worker      WorkerConfig
+	Auth        AuthConfig
+}
+
+// AuthConfig holds JWT authentication configuration
+type AuthConfig struct {
+	JWTSecret          string
+	JWTExpirationHours int
+	Enabled            bool
 }
 
 // ServerConfig holds HTTP server configuration
@@ -156,6 +164,11 @@ func Load() (*Config, error) {
 			Concurrency:  viper.GetInt("worker.concurrency"),
 			PollInterval: viper.GetDuration("worker.poll_interval"),
 		},
+		Auth: AuthConfig{
+			JWTSecret:          viper.GetString("auth.jwt_secret"),
+			JWTExpirationHours: viper.GetInt("auth.jwt_expiration_hours"),
+			Enabled:            viper.GetBool("auth.enabled"),
+		},
 	}
 
 	// Override database config from DATABASE_URL if present
@@ -217,6 +230,11 @@ func setDefaults() {
 	// Worker defaults
 	viper.SetDefault("worker.concurrency", 3)
 	viper.SetDefault("worker.poll_interval", 5*time.Second)
+
+	// Auth defaults
+	viper.SetDefault("auth.jwt_secret", "change-me-in-production") // Must be overridden in production
+	viper.SetDefault("auth.jwt_expiration_hours", 24)
+	viper.SetDefault("auth.enabled", false) // Disabled by default for development
 }
 
 // GetDatabaseDSN returns the PostgreSQL connection string

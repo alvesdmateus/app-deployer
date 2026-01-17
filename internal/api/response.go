@@ -34,3 +34,8 @@ func RespondWithSuccess(w http.ResponseWriter, statusCode int, message string, d
 		Data:    data,
 	})
 }
+
+// DecodeJSON decodes the request body into the given struct
+func DecodeJSON(r *http.Request, v interface{}) error {
+	return json.NewDecoder(r.Body).Decode(v)
+}
