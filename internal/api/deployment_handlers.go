@@ -29,6 +29,16 @@ func NewDeploymentHandler(repo *state.Repository, orchClient *orchestrator.Clien
 }
 
 // CreateDeployment handles POST /api/v1/deployments
+// @Summary      Create a new deployment
+// @Description  Create a new deployment configuration. Optionally triggers immediate provisioning if image_tag is provided.
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        deployment  body      CreateDeploymentRequest  true  "Deployment configuration"
+// @Success      201         {object}  DeploymentResponse
+// @Failure      400         {object}  ErrorResponse
+// @Failure      500         {object}  ErrorResponse
+// @Router       /deployments [post]
 func (h *DeploymentHandler) CreateDeployment(w http.ResponseWriter, r *http.Request) {
 	var req CreateDeploymentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -107,6 +117,16 @@ func (h *DeploymentHandler) CreateDeployment(w http.ResponseWriter, r *http.Requ
 }
 
 // GetDeployment handles GET /api/v1/deployments/{id}
+// @Summary      Get a deployment by ID
+// @Description  Retrieve detailed information about a specific deployment
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Deployment ID (UUID)"
+// @Success      200  {object}  DeploymentResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Router       /deployments/{id} [get]
 func (h *DeploymentHandler) GetDeployment(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -127,6 +147,16 @@ func (h *DeploymentHandler) GetDeployment(w http.ResponseWriter, r *http.Request
 }
 
 // ListDeployments handles GET /api/v1/deployments
+// @Summary      List all deployments
+// @Description  Retrieve a paginated list of all deployments
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        limit   query     int     false  "Maximum number of results (default: 20)"
+// @Param        offset  query     int     false  "Number of results to skip (default: 0)"
+// @Success      200     {object}  ListDeploymentsResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /deployments [get]
 func (h *DeploymentHandler) ListDeployments(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	limitStr := r.URL.Query().Get("limit")
@@ -165,6 +195,17 @@ func (h *DeploymentHandler) ListDeployments(w http.ResponseWriter, r *http.Reque
 }
 
 // UpdateDeploymentStatus handles PATCH /api/v1/deployments/{id}/status
+// @Summary      Update deployment status
+// @Description  Manually update the status of a deployment
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string                       true  "Deployment ID (UUID)"
+// @Param        status  body      UpdateDeploymentStatusRequest  true  "New status"
+// @Success      200     {object}  SuccessResponse
+// @Failure      400     {object}  ErrorResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /deployments/{id}/status [patch]
 func (h *DeploymentHandler) UpdateDeploymentStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -194,6 +235,18 @@ func (h *DeploymentHandler) UpdateDeploymentStatus(w http.ResponseWriter, r *htt
 }
 
 // DeleteDeployment handles DELETE /api/v1/deployments/{id}
+// @Summary      Delete a deployment
+// @Description  Delete a deployment and its associated infrastructure. If infrastructure exists, triggers async destruction.
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Deployment ID (UUID)"
+// @Success      200  {object}  SuccessResponse  "Deployment deleted (no infrastructure)"
+// @Success      202  {object}  SuccessResponse  "Destruction initiated (has infrastructure)"
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /deployments/{id} [delete]
 func (h *DeploymentHandler) DeleteDeployment(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -245,6 +298,16 @@ func (h *DeploymentHandler) DeleteDeployment(w http.ResponseWriter, r *http.Requ
 }
 
 // GetDeploymentsByStatus handles GET /api/v1/deployments/status/{status}
+// @Summary      Get deployments by status
+// @Description  Retrieve all deployments with a specific status
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        status  path      string  true  "Deployment status (PENDING, QUEUED, BUILDING, PROVISIONING, DEPLOYING, HEALTHY, FAILED, etc.)"
+// @Success      200     {array}   DeploymentResponse
+// @Failure      400     {object}  ErrorResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /deployments/status/{status} [get]
 func (h *DeploymentHandler) GetDeploymentsByStatus(w http.ResponseWriter, r *http.Request) {
 	status := chi.URLParam(r, "status")
 	if status == "" {
@@ -264,7 +327,19 @@ func (h *DeploymentHandler) GetDeploymentsByStatus(w http.ResponseWriter, r *htt
 }
 
 // StartDeployment handles POST /api/v1/deployments/{id}/deploy
-// This is called after a build completes to trigger the deployment with the built image
+// @Summary      Start deployment
+// @Description  Trigger infrastructure provisioning and application deployment with a built container image
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                  true  "Deployment ID (UUID)"
+// @Param        request  body      StartDeploymentRequest  true  "Deployment configuration"
+// @Success      202      {object}  OrchestrationResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Failure      503      {object}  ErrorResponse  "Orchestration service unavailable"
+// @Router       /deployments/{id}/deploy [post]
 func (h *DeploymentHandler) StartDeployment(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -340,6 +415,19 @@ func (h *DeploymentHandler) StartDeployment(w http.ResponseWriter, r *http.Reque
 }
 
 // TriggerRollback handles POST /api/v1/deployments/{id}/rollback
+// @Summary      Trigger rollback
+// @Description  Rollback a deployment to a previous version
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                  true  "Deployment ID (UUID)"
+// @Param        request  body      TriggerRollbackRequest  true  "Rollback configuration"
+// @Success      202      {object}  OrchestrationResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Failure      503      {object}  ErrorResponse  "Orchestration service unavailable"
+// @Router       /deployments/{id}/rollback [post]
 func (h *DeploymentHandler) TriggerRollback(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -408,6 +496,15 @@ func (h *DeploymentHandler) TriggerRollback(w http.ResponseWriter, r *http.Reque
 }
 
 // GetQueueStats handles GET /api/v1/orchestrator/stats
+// @Summary      Get queue statistics
+// @Description  Retrieve statistics about the job queues (provision, deploy, destroy, rollback)
+// @Tags         orchestrator
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  QueueStatsResponse
+// @Failure      500  {object}  ErrorResponse
+// @Failure      503  {object}  ErrorResponse  "Orchestration service unavailable"
+// @Router       /orchestrator/stats [get]
 func (h *DeploymentHandler) GetQueueStats(w http.ResponseWriter, r *http.Request) {
 	if h.orchClient == nil {
 		RespondWithError(w, http.StatusServiceUnavailable,
@@ -432,6 +529,20 @@ func (h *DeploymentHandler) GetQueueStats(w http.ResponseWriter, r *http.Request
 }
 
 // GetDeploymentLogs handles GET /api/v1/deployments/{id}/logs
+// @Summary      Get deployment logs
+// @Description  Retrieve logs for a specific deployment, optionally filtered by phase
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string  true   "Deployment ID (UUID)"
+// @Param        phase   query     string  false  "Filter by phase (BUILDING, PROVISIONING, DEPLOYING, etc.)"
+// @Param        limit   query     int     false  "Maximum number of results (default: 100, max: 1000)"
+// @Param        offset  query     int     false  "Number of results to skip (default: 0)"
+// @Success      200     {object}  ListDeploymentLogsResponse
+// @Failure      400     {object}  ErrorResponse
+// @Failure      404     {object}  ErrorResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /deployments/{id}/logs [get]
 func (h *DeploymentHandler) GetDeploymentLogs(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

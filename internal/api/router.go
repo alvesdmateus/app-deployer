@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"gorm.io/gorm"
 )
 
@@ -114,6 +115,7 @@ func initializeBuildService(cfg *config.Config, tracker builder.BuildTracker) (b
 	serviceConfig := builder.ServiceConfig{
 		RegistryConfig: registryConfig,
 		StrategyType:   strategies.StrategyTypeDocker,
+		BuildTimeout:   cfg.Builder.BuildTimeout,
 	}
 
 	// Create build service
@@ -138,6 +140,9 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/health", s.healthCheck)
 	s.router.Get("/health/live", s.livenessCheck)
 	s.router.Get("/health/ready", s.readinessCheck)
+
+	// Swagger documentation
+	s.router.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	// API v1 routes
 	s.router.Route("/api/v1", func(r chi.Router) {

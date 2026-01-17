@@ -20,6 +20,15 @@ func NewBuildHandler(repo *state.Repository) *BuildHandler {
 }
 
 // GetLatestBuild handles GET /api/v1/deployments/{deployment_id}/builds/latest
+// @Summary      Get latest build
+// @Description  Returns the latest build for a specific deployment
+// @Tags         builds
+// @Produce      json
+// @Param        deployment_id  path      string  true  "Deployment ID"
+// @Success      200            {object}  BuildResponse
+// @Failure      400            {object}  ErrorResponse
+// @Failure      404            {object}  ErrorResponse
+// @Router       /deployments/{deployment_id}/builds/latest [get]
 func (h *BuildHandler) GetLatestBuild(w http.ResponseWriter, r *http.Request) {
 	deploymentIDStr := chi.URLParam(r, "deployment_id")
 	deploymentID, err := uuid.Parse(deploymentIDStr)

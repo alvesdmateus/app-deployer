@@ -20,6 +20,15 @@ func NewInfrastructureHandler(repo *state.Repository) *InfrastructureHandler {
 }
 
 // GetInfrastructure handles GET /api/v1/deployments/{deployment_id}/infrastructure
+// @Summary      Get infrastructure details
+// @Description  Returns the infrastructure details for a specific deployment
+// @Tags         infrastructure
+// @Produce      json
+// @Param        deployment_id  path      string  true  "Deployment ID"
+// @Success      200            {object}  InfrastructureResponse
+// @Failure      400            {object}  ErrorResponse
+// @Failure      404            {object}  ErrorResponse
+// @Router       /deployments/{deployment_id}/infrastructure [get]
 func (h *InfrastructureHandler) GetInfrastructure(w http.ResponseWriter, r *http.Request) {
 	deploymentIDStr := chi.URLParam(r, "deployment_id")
 	deploymentID, err := uuid.Parse(deploymentIDStr)

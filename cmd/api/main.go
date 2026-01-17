@@ -1,3 +1,21 @@
+// @title           App Deployer API
+// @version         1.0
+// @description     A custom PaaS platform for automated application deployment.
+// @description     Deploy applications from Git repositories to Kubernetes with zero-configuration.
+
+// @contact.name   API Support
+// @contact.url    https://github.com/alvesdmateus/app-deployer
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:3000
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+
 package main
 
 import (
@@ -13,6 +31,8 @@ import (
 	"github.com/alvesdmateus/app-deployer/pkg/database"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	_ "github.com/alvesdmateus/app-deployer/docs" // Swagger docs
 )
 
 func main() {

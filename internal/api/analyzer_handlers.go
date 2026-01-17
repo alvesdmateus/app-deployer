@@ -29,6 +29,16 @@ type AnalyzeRequest struct {
 }
 
 // AnalyzeSourceCode handles POST /api/v1/analyze
+// @Summary      Analyze source code
+// @Description  Analyze source code at a given path to detect language, framework, and dependencies
+// @Tags         analyzer
+// @Accept       json
+// @Produce      json
+// @Param        request  body      AnalyzeRequest  true  "Path to analyze"
+// @Success      200      {object}  analyzer.AnalysisResult
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /analyze [post]
 func (h *AnalyzerHandler) AnalyzeSourceCode(w http.ResponseWriter, r *http.Request) {
 	var req AnalyzeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -53,6 +63,16 @@ func (h *AnalyzerHandler) AnalyzeSourceCode(w http.ResponseWriter, r *http.Reque
 }
 
 // UploadAndAnalyze handles POST /api/v1/analyze/upload
+// @Summary      Upload and analyze source code
+// @Description  Upload source code as a file and analyze it to detect language, framework, and dependencies
+// @Tags         analyzer
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        source  formData  file  true  "Source code archive (zip, tar.gz)"
+// @Success      200     {object}  analyzer.AnalysisResult
+// @Failure      400     {object}  ErrorResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /analyze/upload [post]
 func (h *AnalyzerHandler) UploadAndAnalyze(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form
 	err := r.ParseMultipartForm(32 << 20) // 32 MB max
@@ -109,6 +129,12 @@ func (h *AnalyzerHandler) UploadAndAnalyze(w http.ResponseWriter, r *http.Reques
 }
 
 // GetSupportedLanguages handles GET /api/v1/analyze/languages
+// @Summary      Get supported languages
+// @Description  Returns a list of supported programming languages and their frameworks
+// @Tags         analyzer
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /analyze/languages [get]
 func (h *AnalyzerHandler) GetSupportedLanguages(w http.ResponseWriter, r *http.Request) {
 	languages := []map[string]interface{}{
 		{

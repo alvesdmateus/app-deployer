@@ -47,6 +47,16 @@ type BuildImageResponse struct {
 }
 
 // BuildImage handles POST /api/v1/builds
+// @Summary      Build container image
+// @Description  Build a container image from source code
+// @Tags         builder
+// @Accept       json
+// @Produce      json
+// @Param        request  body      BuildImageRequest  true  "Build request"
+// @Success      201      {object}  BuildImageResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /builds [post]
 func (h *BuilderHandler) BuildImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -136,6 +146,15 @@ func (h *BuilderHandler) BuildImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetBuildLogs handles GET /api/v1/builds/{buildID}/logs
+// @Summary      Get build logs
+// @Description  Stream the logs for a specific build
+// @Tags         builder
+// @Produce      text/plain
+// @Param        buildID  path      string  true  "Build ID"
+// @Success      200      {string}  string  "Build logs"
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /builds/{buildID}/logs [get]
 func (h *BuilderHandler) GetBuildLogs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	buildID := chi.URLParam(r, "buildID")
@@ -165,6 +184,15 @@ func (h *BuilderHandler) GetBuildLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 // CancelBuild handles POST /api/v1/builds/{buildID}/cancel
+// @Summary      Cancel build
+// @Description  Cancel an in-progress build
+// @Tags         builder
+// @Produce      json
+// @Param        buildID  path      string  true  "Build ID"
+// @Success      200      {object}  SuccessResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /builds/{buildID}/cancel [post]
 func (h *BuilderHandler) CancelBuild(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	buildID := chi.URLParam(r, "buildID")
@@ -200,6 +228,16 @@ type GenerateDockerfileResponse struct {
 }
 
 // GenerateDockerfile handles POST /api/v1/builds/generate-dockerfile
+// @Summary      Generate Dockerfile
+// @Description  Analyze source code and generate an optimized Dockerfile
+// @Tags         builder
+// @Accept       json
+// @Produce      json
+// @Param        request  body      GenerateDockerfileRequest  true  "Source path"
+// @Success      200      {object}  GenerateDockerfileResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /builds/generate-dockerfile [post]
 func (h *BuilderHandler) GenerateDockerfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
