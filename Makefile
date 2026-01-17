@@ -1,4 +1,4 @@
-.PHONY: help build test clean run init-db docker-build docker-up docker-down lint fmt
+.PHONY: help build test test-unit test-integration test-e2e clean run init-db docker-build docker-up docker-down lint fmt
 
 # Variables
 APP_NAME=app-deployer
@@ -9,16 +9,19 @@ INIT_DB_FILE=scripts/setup/init-db.go
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build       - Build the application"
-	@echo "  test        - Run tests"
-	@echo "  clean       - Clean build artifacts"
-	@echo "  run         - Run the application"
-	@echo "  init-db     - Initialize database"
-	@echo "  docker-build- Build Docker image"
-	@echo "  docker-up   - Start Docker services"
-	@echo "  docker-down - Stop Docker services"
-	@echo "  lint        - Run linters"
-	@echo "  fmt         - Format code"
+	@echo "  build            - Build the application"
+	@echo "  test             - Run all unit tests"
+	@echo "  test-unit        - Run unit tests only"
+	@echo "  test-integration - Run integration tests (requires Docker)"
+	@echo "  test-e2e         - Run E2E tests (requires GCP credentials)"
+	@echo "  clean            - Clean build artifacts"
+	@echo "  run              - Run the application"
+	@echo "  init-db          - Initialize database"
+	@echo "  docker-build     - Build Docker image"
+	@echo "  docker-up        - Start Docker services"
+	@echo "  docker-down      - Stop Docker services"
+	@echo "  lint             - Run linters"
+	@echo "  fmt              - Format code"
 
 # Build the application
 build:
@@ -27,16 +30,41 @@ build:
 	go build -o $(BUILD_DIR)/$(APP_NAME) $(MAIN_FILE)
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)"
 
-# Run tests
+# Run tests (unit tests only, excludes integration and e2e)
 test:
-	@echo "Running tests..."
-	go test -v -coverprofile=coverage.out ./...
+	@echo "Running unit tests..."
+	go test -v -coverprofile=coverage.out ./internal/... ./pkg/...
 	@echo "Tests complete"
+
+# Alias for unit tests
+test-unit: test
+
+# Run integration tests (requires Docker, optionally kind cluster)
+test-integration:
+	@echo "Running integration tests..."
+	go test -v -tags=integration ./tests/integration/...
+	@echo "Integration tests complete"
+
+# Run integration tests in short mode (faster, skips slow tests)
+test-integration-short:
+	@echo "Running integration tests (short mode)..."
+	go test -v -short -tags=integration ./tests/integration/...
+	@echo "Integration tests complete"
+
+# Run E2E tests (requires GCP credentials and infrastructure)
+test-e2e:
+	@echo "Running E2E tests..."
+	go test -v -tags=e2e ./tests/e2e/...
+	@echo "E2E tests complete"
+
+# Run all tests (unit + integration)
+test-all: test test-integration
+	@echo "All tests complete"
 
 # Run tests with race detection (requires CGO)
 test-race:
 	@echo "Running tests with race detection..."
-	go test -v -race -coverprofile=coverage.out ./...
+	go test -v -race -coverprofile=coverage.out ./internal/... ./pkg/...
 	@echo "Tests complete"
 
 # Run tests with coverage report
