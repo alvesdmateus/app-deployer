@@ -19,9 +19,9 @@ func NewInfrastructureHandler(repo *state.Repository) *InfrastructureHandler {
 	return &InfrastructureHandler{repo: repo}
 }
 
-// GetInfrastructure handles GET /api/v1/deployments/{deployment_id}/infrastructure
+// GetInfrastructure handles GET /api/v1/deployments/{id}/infrastructure
 func (h *InfrastructureHandler) GetInfrastructure(w http.ResponseWriter, r *http.Request) {
-	deploymentIDStr := chi.URLParam(r, "deployment_id")
+	deploymentIDStr := chi.URLParam(r, "id")
 	deploymentID, err := uuid.Parse(deploymentIDStr)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid deployment ID")

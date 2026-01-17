@@ -19,9 +19,9 @@ func NewBuildHandler(repo *state.Repository) *BuildHandler {
 	return &BuildHandler{repo: repo}
 }
 
-// GetLatestBuild handles GET /api/v1/deployments/{deployment_id}/builds/latest
+// GetLatestBuild handles GET /api/v1/deployments/{id}/builds/latest
 func (h *BuildHandler) GetLatestBuild(w http.ResponseWriter, r *http.Request) {
-	deploymentIDStr := chi.URLParam(r, "deployment_id")
+	deploymentIDStr := chi.URLParam(r, "id")
 	deploymentID, err := uuid.Parse(deploymentIDStr)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid deployment ID")
