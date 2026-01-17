@@ -1,6 +1,6 @@
 module github.com/alvesdmateus/app-deployer
 
-go 1.22
+go 1.25.0
 
 require (
 	github.com/docker/docker v28.5.2+incompatible
@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/cors v1.2.2
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/google/uuid v1.6.0
+	github.com/prometheus/client_golang v1.23.2
 	github.com/pulumi/pulumi-gcp/sdk/v7 v7.38.0
 	github.com/pulumi/pulumi/sdk/v3 v3.215.0
 	github.com/redis/go-redis/v9 v9.17.2
@@ -34,6 +35,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/bubbles v0.16.1 // indirect
@@ -116,6 +118,9 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/common v0.66.1 // indirect
+	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.17.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect

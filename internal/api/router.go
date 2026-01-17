@@ -7,6 +7,7 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/builder"
 	"github.com/alvesdmateus/app-deployer/internal/builder/registry"
 	"github.com/alvesdmateus/app-deployer/internal/builder/strategies"
+	"github.com/alvesdmateus/app-deployer/internal/observability"
 	"github.com/alvesdmateus/app-deployer/internal/orchestrator"
 	"github.com/alvesdmateus/app-deployer/internal/queue"
 	"github.com/alvesdmateus/app-deployer/internal/state"
@@ -14,6 +15,7 @@ import (
 	"github.com/alvesdmateus/app-deployer/pkg/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -29,6 +31,7 @@ type Server struct {
 	buildHandler          *BuildHandler
 	analyzerHandler       *AnalyzerHandler
 	builderHandler        *BuilderHandler
+	metrics               *observability.Metrics
 }
 
 // NewServer creates a new API server
@@ -84,6 +87,9 @@ func NewServer(db *gorm.DB) *Server {
 		// Continue with nil build service - endpoints will return errors
 	}
 
+	// Initialize metrics
+	metrics := observability.NewMetrics("app_deployer")
+
 	s := &Server{
 		router:                chi.NewRouter(),
 		db:                    db,
@@ -94,6 +100,7 @@ func NewServer(db *gorm.DB) *Server {
 		buildHandler:          NewBuildHandler(repo),
 		analyzerHandler:       NewAnalyzerHandler(),
 		builderHandler:        NewBuilderHandler(buildService, analyzer),
+		metrics:               metrics,
 	}
 
 	s.setupRoutes()
@@ -133,11 +140,15 @@ func (s *Server) setupRoutes() {
 	s.router.Use(RequestLogger)
 	s.router.Use(CORSMiddleware())
 	s.router.Use(middleware.RealIP)
+	s.router.Use(MetricsMiddleware(s.metrics))
 
 	// Health check endpoints
 	s.router.Get("/health", s.healthCheck)
 	s.router.Get("/health/live", s.livenessCheck)
 	s.router.Get("/health/ready", s.readinessCheck)
+
+	// Prometheus metrics endpoint
+	s.router.Handle("/metrics", promhttp.Handler())
 
 	// API v1 routes
 	s.router.Route("/api/v1", func(r chi.Router) {
