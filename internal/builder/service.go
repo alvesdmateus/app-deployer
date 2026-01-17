@@ -2,9 +2,11 @@ package builder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -13,18 +15,26 @@ import (
 	"github.com/alvesdmateus/app-deployer/internal/builder/strategies"
 )
 
+// ErrBuildTimeout is returned when a build exceeds the configured timeout
+var ErrBuildTimeout = errors.New("build timeout exceeded")
+
+// DefaultBuildTimeout is the default maximum time allowed for a build
+const DefaultBuildTimeout = 30 * time.Minute
+
 // Service implements BuildService interface
 type Service struct {
 	dockerfileGenerator DockerfileGenerator
 	buildStrategy       BuildStrategy
 	registryClient      RegistryClient
 	tracker             BuildTracker
+	buildTimeout        time.Duration
 }
 
 // ServiceConfig contains configuration for the build service
 type ServiceConfig struct {
 	RegistryConfig registry.Config
 	StrategyType   strategies.StrategyType
+	BuildTimeout   time.Duration
 }
 
 // NewService creates a new build service
@@ -46,11 +56,18 @@ func NewService(config ServiceConfig, tracker BuildTracker) (*Service, error) {
 		return nil, fmt.Errorf("failed to create registry client: %w", err)
 	}
 
+	// Use configured timeout or default
+	buildTimeout := config.BuildTimeout
+	if buildTimeout <= 0 {
+		buildTimeout = DefaultBuildTimeout
+	}
+
 	return &Service{
 		dockerfileGenerator: generator,
 		buildStrategy:       strategy,
 		registryClient:      registryClient,
 		tracker:             tracker,
+		buildTimeout:        buildTimeout,
 	}, nil
 }
 
@@ -66,7 +83,12 @@ func (s *Service) BuildImage(ctx context.Context, buildCtx *BuildContext) (*Buil
 		Str("deploymentID", buildCtx.DeploymentID).
 		Str("appName", buildCtx.AppName).
 		Str("version", buildCtx.Version).
+		Dur("timeout", s.buildTimeout).
 		Msg("Starting container image build")
+
+	// Wrap context with build timeout
+	ctx, cancel := context.WithTimeout(ctx, s.buildTimeout)
+	defer cancel()
 
 	// Step 1: Start build tracking
 	build, err := s.tracker.StartBuild(ctx, buildCtx.DeploymentID)
@@ -79,7 +101,17 @@ func (s *Service) BuildImage(ctx context.Context, buildCtx *BuildContext) (*Buil
 	// Ensure build failure is tracked if we encounter an error
 	defer func() {
 		if err != nil {
-			if trackErr := s.tracker.FailBuild(ctx, buildCtx.BuildID, err); trackErr != nil {
+			// Check if this is a timeout error and wrap it appropriately
+			failErr := err
+			if errors.Is(err, context.DeadlineExceeded) {
+				failErr = fmt.Errorf("%w: build exceeded maximum duration of %v", ErrBuildTimeout, s.buildTimeout)
+				log.Error().
+					Str("buildID", buildCtx.BuildID).
+					Str("deploymentID", buildCtx.DeploymentID).
+					Dur("timeout", s.buildTimeout).
+					Msg("Build timeout exceeded")
+			}
+			if trackErr := s.tracker.FailBuild(context.Background(), buildCtx.BuildID, failErr); trackErr != nil {
 				log.Error().
 					Err(trackErr).
 					Str("buildID", buildCtx.BuildID).

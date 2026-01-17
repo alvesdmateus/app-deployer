@@ -150,6 +150,7 @@ func main() {
 			Project:  cfg.Registry.Project,
 			Location: cfg.Registry.Location,
 		},
+		BuildTimeout: cfg.Builder.BuildTimeout,
 	}
 
 	builderService, err := builder.NewService(builderConfig, builderTracker)
@@ -157,7 +158,9 @@ func main() {
 		zlog.Fatal().Err(err).Msg("Failed to create builder service")
 	}
 
-	zlog.Info().Msg("Builder service initialized successfully")
+	zlog.Info().
+		Dur("build_timeout", cfg.Builder.BuildTimeout).
+		Msg("Builder service initialized successfully")
 
 	// Create orchestrator engine
 	zlog.Info().Msg("Creating orchestrator engine...")

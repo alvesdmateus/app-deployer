@@ -15,9 +15,15 @@ type Config struct {
 	Redis       RedisConfig
 	Platform    PlatformConfig
 	Registry    RegistryConfig
+	Builder     BuilderConfig
 	Provisioner ProvisionerConfig
 	Deployer    DeployerConfig
 	Worker      WorkerConfig
+}
+
+// BuilderConfig holds container builder configuration
+type BuilderConfig struct {
+	BuildTimeout time.Duration
 }
 
 // ServerConfig holds HTTP server configuration
@@ -139,6 +145,9 @@ func Load() (*Config, error) {
 			Location: viper.GetString("registry.location"),
 			URL:      viper.GetString("registry.url"),
 		},
+		Builder: BuilderConfig{
+			BuildTimeout: viper.GetDuration("builder.build_timeout"),
+		},
 		Provisioner: ProvisionerConfig{
 			GCPProject:      viper.GetString("provisioner.gcp_project"),
 			GCPRegion:       viper.GetString("provisioner.gcp_region"),
@@ -200,6 +209,9 @@ func setDefaults() {
 	viper.SetDefault("registry.project", "")
 	viper.SetDefault("registry.location", "us-central1")
 	viper.SetDefault("registry.url", "")
+
+	// Builder defaults
+	viper.SetDefault("builder.build_timeout", 30*time.Minute)
 
 	// Provisioner defaults
 	viper.SetDefault("provisioner.gcp_project", "")

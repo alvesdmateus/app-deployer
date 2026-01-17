@@ -102,6 +102,9 @@ func TestConfigStructure(t *testing.T) {
 			Location: "us-central1",
 			URL:      "",
 		},
+		Builder: BuilderConfig{
+			BuildTimeout: 30 * time.Minute,
+		},
 	}
 
 	// Verify config structure is properly initialized
@@ -115,5 +118,27 @@ func TestConfigStructure(t *testing.T) {
 
 	if cfg.Platform.DefaultCloud != "gcp" {
 		t.Errorf("Expected default cloud gcp, got %s", cfg.Platform.DefaultCloud)
+	}
+
+	if cfg.Builder.BuildTimeout != 30*time.Minute {
+		t.Errorf("Expected build timeout 30m, got %v", cfg.Builder.BuildTimeout)
+	}
+}
+
+func TestBuilderConfigDefaults(t *testing.T) {
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Verify builder config defaults
+	if cfg.Builder.BuildTimeout <= 0 {
+		t.Error("Expected build timeout to be set to a positive value")
+	}
+
+	// Default should be 30 minutes
+	expectedTimeout := 30 * time.Minute
+	if cfg.Builder.BuildTimeout != expectedTimeout {
+		t.Errorf("Expected default build timeout %v, got %v", expectedTimeout, cfg.Builder.BuildTimeout)
 	}
 }
