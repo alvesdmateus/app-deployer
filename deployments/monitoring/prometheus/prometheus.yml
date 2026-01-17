@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'app-deployer-api'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app-deployer-api:3000']
+        labels:
+          service: 'api'
+
+  - job_name: 'app-deployer-worker'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app-deployer-worker:3001']
+        labels:
+          service: 'worker'
