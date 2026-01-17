@@ -216,36 +216,39 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 **Files**: `internal/provisioner/interface.go`, `internal/provisioner/gcp/`, `internal/provisioner/azure/`
 
 #### 2.2 Security Enhancements (Week 8)
-- [ ] Integrate Trivy for vulnerability scanning
-- [ ] Scan images before deployment
-- [ ] Fail deployment on critical vulnerabilities (configurable)
+- [x] Integrate Trivy for vulnerability scanning
+- [x] Scan images before deployment
+- [x] Fail deployment on critical vulnerabilities (configurable)
 - [ ] Implement secrets management
   - Integration with AWS Secrets Manager
   - Integration with GCP Secret Manager
   - Integration with Azure Key Vault
 - [ ] Add external-secrets operator to Kubernetes deployments
-- [ ] Implement API authentication with JWT
-- [ ] Add rate limiting to API endpoints
+- [x] Implement API authentication with JWT
+- [x] Add rate limiting to API endpoints
 - [ ] Security audit of all components
 
-**Files**: `internal/builder/scanner.go`, `internal/secrets/`
+**Files**: `internal/builder/scanner/trivy.go`, `internal/api/auth.go`, `internal/api/ratelimit.go`
 
 #### 2.3 Observability (Week 9)
-- [ ] Implement structured logging (zerolog or zap)
-- [ ] Add Prometheus metrics
+- [x] Implement structured logging (zerolog or zap)
+- [x] Add Prometheus metrics
   - Deployment counters (success/failure)
   - Build time histogram
   - Provisioning time histogram
   - Active deployments gauge
-- [ ] Create Grafana dashboards
+  - HTTP request metrics
+  - Queue metrics
+  - Vulnerability scan metrics
+- [x] Create Grafana dashboards
 - [ ] Implement distributed tracing with OpenTelemetry
-- [ ] Add health check endpoints
+- [x] Add health check endpoints
   - `/health/live` - Liveness probe
   - `/health/ready` - Readiness probe
   - `/metrics` - Prometheus metrics
 - [ ] Set up log aggregation (Loki or ELK)
 
-**Files**: `internal/observability/logger.go`, `internal/observability/metrics.go`, `deployments/grafana/`
+**Files**: `internal/observability/metrics.go`, `internal/api/metrics_middleware.go`, `deployments/monitoring/`
 
 #### 2.4 Rollback & Recovery (Week 9-10)
 - [ ] Store previous deployment versions in state
@@ -461,7 +464,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
 | **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (90%)** |
-| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | ⏳ Pending |
+| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (40%)** |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
 
@@ -509,6 +512,35 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - `e6e4e94` - add E2E tests and enhance orchestrator infrastructure
 - `9b52522` - fix GKE provisioning and auth issues for E2E tests
 - `082733a` - fix critical implementation gaps in deployer and orchestrator
+
+### Current Status Details (Phase 2)
+
+**✅ Completed:**
+- 2.2 Security Enhancements (60%)
+  - JWT authentication with user registration/login
+  - API key authentication with scopes
+  - IP-based rate limiting with token bucket algorithm
+  - Trivy vulnerability scanning integration
+  - Image scanning before deployment (configurable fail on critical/high)
+- 2.3 Observability (70%)
+  - Prometheus metrics for all components
+  - HTTP request metrics middleware
+  - Grafana dashboard with comprehensive panels
+  - Health check endpoints (/health/live, /health/ready, /metrics)
+  - Docker Compose for local monitoring stack
+
+**🔄 In Progress:**
+- Multi-cloud support (AWS/Azure provisioners)
+- Distributed tracing with OpenTelemetry
+- Log aggregation setup
+
+**⏳ Next Up:**
+- 2.4 Rollback & Recovery
+- 2.5 Advanced Features (auto-scaling, custom domains, DNS)
+
+**Recent Feature Branches:**
+- `feature/jwt-auth` - Security features (JWT, rate limiting, Trivy scanning)
+- `feature/observability` - Prometheus metrics, Grafana dashboards
 
 ---
 
