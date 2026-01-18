@@ -1,31 +1,48 @@
-.PHONY: help build test clean run init-db docker-build docker-up docker-down lint fmt
+.PHONY: help build build-api build-worker build-cli test clean run run-api run-worker docker-build docker-up docker-down lint fmt
 
 # Variables
 APP_NAME=app-deployer
 BUILD_DIR=bin
-MAIN_FILE=cmd/server/main.go
-INIT_DB_FILE=scripts/setup/init-db.go
 
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build       - Build the application"
+	@echo "  build       - Build all binaries (api, worker, cli)"
+	@echo "  build-api   - Build the API server"
+	@echo "  build-worker- Build the orchestrator worker"
+	@echo "  build-cli   - Build the CLI tool"
 	@echo "  test        - Run tests"
 	@echo "  clean       - Clean build artifacts"
-	@echo "  run         - Run the application"
-	@echo "  init-db     - Initialize database"
+	@echo "  run         - Run the API server"
+	@echo "  run-api     - Run the API server"
+	@echo "  run-worker  - Run the orchestrator worker"
 	@echo "  docker-build- Build Docker image"
 	@echo "  docker-up   - Start Docker services"
 	@echo "  docker-down - Stop Docker services"
 	@echo "  lint        - Run linters"
 	@echo "  fmt         - Format code"
 
-# Build the application
-build:
-	@echo "Building $(APP_NAME)..."
+# Build all binaries
+build: build-api build-worker build-cli
+	@echo "All binaries built successfully"
+
+build-api:
+	@echo "Building API server..."
 	@mkdir -p $(BUILD_DIR)
-	go build -o $(BUILD_DIR)/$(APP_NAME) $(MAIN_FILE)
-	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)"
+	go build -o $(BUILD_DIR)/api ./cmd/api
+	@echo "Build complete: $(BUILD_DIR)/api"
+
+build-worker:
+	@echo "Building orchestrator worker..."
+	@mkdir -p $(BUILD_DIR)
+	go build -o $(BUILD_DIR)/worker ./cmd/worker
+	@echo "Build complete: $(BUILD_DIR)/worker"
+
+build-cli:
+	@echo "Building CLI tool..."
+	@mkdir -p $(BUILD_DIR)
+	go build -o $(BUILD_DIR)/deployer ./cmd/cli
+	@echo "Build complete: $(BUILD_DIR)/deployer"
 
 # Run tests
 test:
@@ -51,15 +68,16 @@ clean:
 	rm -f coverage.out coverage.html
 	@echo "Clean complete"
 
-# Run the application
-run:
-	@echo "Running $(APP_NAME)..."
-	go run $(MAIN_FILE)
+# Run the API server (default)
+run: run-api
 
-# Initialize database
-init-db:
-	@echo "Initializing database..."
-	go run $(INIT_DB_FILE)
+run-api:
+	@echo "Running API server..."
+	go run ./cmd/api
+
+run-worker:
+	@echo "Running orchestrator worker..."
+	go run ./cmd/worker
 
 # Build Docker image
 docker-build:

@@ -1,54 +1,56 @@
 package database
 
 import (
+	"os"
 	"testing"
 	"time"
-
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
-// TestNew tests database connection creation
-func TestNew(t *testing.T) {
-	config := Config{
-		Host:            "localhost",
+// getTestConfig returns a Config for testing
+func getTestConfig() Config {
+	// Allow override via environment variable
+	host := os.Getenv("TEST_DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	return Config{
+		Host:            host,
 		Port:            5432,
-		User:            "test",
-		Password:        "test",
-		DBName:          "test",
+		User:            "deployer",
+		Password:        "test_password",
+		DBName:          "app_deployer_test",
 		SSLMode:         "disable",
 		MaxOpenConns:    10,
 		MaxIdleConns:    5,
 		ConnMaxLifetime: 5 * time.Minute,
 	}
+}
 
-	// Note: This test would require a running PostgreSQL instance
-	// For unit tests, we typically use mock databases or skip this test
-	t.Skip("Skipping integration test - requires PostgreSQL instance")
+// TestNew tests database connection creation
+func TestNew(t *testing.T) {
+	config := getTestConfig()
 
 	db, err := New(config)
 	if err != nil {
-		t.Fatalf("Failed to create database connection: %v", err)
+		t.Skipf("Skipping test - PostgreSQL not available: %v", err)
 	}
+	defer Close(db)
 
 	if db == nil {
 		t.Fatal("Expected database connection, got nil")
-	}
-
-	// Clean up
-	if err := Close(db); err != nil {
-		t.Errorf("Failed to close database: %v", err)
 	}
 }
 
 // TestHealthCheck tests database health check
 func TestHealthCheck(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
-	// Create an in-memory SQLite database for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	config := getTestConfig()
+
+	db, err := New(config)
 	if err != nil {
-		t.Fatalf("Failed to create test database: %v", err)
+		t.Skipf("Skipping test - PostgreSQL not available: %v", err)
 	}
+	defer Close(db)
 
 	// Test health check
 	if err := HealthCheck(db); err != nil {
@@ -58,11 +60,11 @@ func TestHealthCheck(t *testing.T) {
 
 // TestClose tests database connection closure
 func TestClose(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
-	// Create an in-memory SQLite database for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	config := getTestConfig()
+
+	db, err := New(config)
 	if err != nil {
-		t.Fatalf("Failed to create test database: %v", err)
+		t.Skipf("Skipping test - PostgreSQL not available: %v", err)
 	}
 
 	// Test close
@@ -73,23 +75,13 @@ func TestClose(t *testing.T) {
 
 // TestConnectionPool tests connection pool configuration
 func TestConnectionPool(t *testing.T) {
-	config := Config{
-		Host:            "localhost",
-		Port:            5432,
-		User:            "test",
-		Password:        "test",
-		DBName:          "test",
-		SSLMode:         "disable",
-		MaxOpenConns:    25,
-		MaxIdleConns:    10,
-		ConnMaxLifetime: 5 * time.Minute,
-	}
-
-	t.Skip("Skipping integration test - requires PostgreSQL instance")
+	config := getTestConfig()
+	config.MaxOpenConns = 25
+	config.MaxIdleConns = 10
 
 	db, err := New(config)
 	if err != nil {
-		t.Fatalf("Failed to create database connection: %v", err)
+		t.Skipf("Skipping test - PostgreSQL not available: %v", err)
 	}
 	defer Close(db)
 

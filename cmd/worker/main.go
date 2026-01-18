@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -196,12 +195,4 @@ func main() {
 	// Graceful shutdown
 	zlog.Info().Msg("Worker stopped")
 	zlog.Info().Msg("Orchestrator worker shutdown complete")
-}
-
-// Helper function to format error messages
-func fatalError(msg string, err error) string {
-	if err != nil {
-		return fmt.Sprintf("%s: %v", msg, err)
-	}
-	return msg
 }

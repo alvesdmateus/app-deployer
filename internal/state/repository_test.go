@@ -2,30 +2,41 @@ package state
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// setupTestDB creates an in-memory SQLite database for testing
+// setupTestDB creates a PostgreSQL database connection for testing
 func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err, "failed to create test database")
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost port=5432 user=deployer password=test_password dbname=app_deployer_test sslmode=disable"
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Skipf("Skipping test - PostgreSQL not available: %v", err)
+	}
 
 	// Run migrations
 	err = db.AutoMigrate(&Deployment{}, &Infrastructure{}, &Build{}, &DeploymentLog{})
 	require.NoError(t, err, "failed to run migrations")
 
+	t.Cleanup(func() {
+		db.Exec("TRUNCATE TABLE deployment_logs, builds, infrastructures, deployments CASCADE")
+	})
+
 	return db
 }
 
 func TestCreateDeployment(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -45,7 +56,6 @@ func TestCreateDeployment(t *testing.T) {
 }
 
 func TestGetDeployment(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -73,7 +83,6 @@ func TestGetDeployment(t *testing.T) {
 }
 
 func TestGetDeploymentNotFound(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -84,7 +93,6 @@ func TestGetDeploymentNotFound(t *testing.T) {
 }
 
 func TestListDeployments(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -110,7 +118,6 @@ func TestListDeployments(t *testing.T) {
 }
 
 func TestUpdateDeploymentStatus(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -138,7 +145,6 @@ func TestUpdateDeploymentStatus(t *testing.T) {
 }
 
 func TestCreateInfrastructure(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -171,7 +177,6 @@ func TestCreateInfrastructure(t *testing.T) {
 }
 
 func TestCreateBuild(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
@@ -203,7 +208,6 @@ func TestCreateBuild(t *testing.T) {
 }
 
 func TestMarkDeploymentAsDeployed(t *testing.T) {
-	t.Skip("Skipping test - requires CGO for SQLite")
 	db := setupTestDB(t)
 	repo := NewRepository(db)
 	ctx := context.Background()
