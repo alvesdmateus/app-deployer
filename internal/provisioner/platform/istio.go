@@ -47,14 +47,14 @@ func DefaultIstioConfig() IstioConfig {
 
 // IstioResources holds created Istio resources
 type IstioResources struct {
-	Namespace        *corev1.Namespace
-	IstioBase        *helmv3.Release
-	Istiod           *helmv3.Release
-	IngressGateway   *helmv3.Release
-	Kiali            *helmv3.Release
-	Jaeger           *helmv3.Release
-	Prometheus       *helmv3.Release
-	Grafana          *helmv3.Release
+	Namespace      *corev1.Namespace
+	IstioBase      *helmv3.Release
+	Istiod         *helmv3.Release
+	IngressGateway *helmv3.Release
+	Kiali          *helmv3.Release
+	Jaeger         *helmv3.Release
+	Prometheus     *helmv3.Release
+	Grafana        *helmv3.Release
 }
 
 // InstallIstio installs Istio service mesh using Helm
@@ -112,7 +112,7 @@ func InstallIstio(ctx *pulumi.Context, provider *kubernetes.Provider, config Ist
 						"sampling": pulumi.Float64(config.TracingSamplingRate),
 					},
 				},
-				"accessLogFile": pulumi.String("/dev/stdout"),
+				"accessLogFile":     pulumi.String("/dev/stdout"),
 				"accessLogEncoding": pulumi.String("JSON"),
 			},
 			"pilot": pulumi.Map{
@@ -211,7 +211,7 @@ func InstallIstio(ctx *pulumi.Context, provider *kubernetes.Provider, config Ist
 						"url": pulumi.String("http://prometheus.istio-system.svc.cluster.local:9090"),
 					},
 					"grafana": pulumi.Map{
-						"enabled":      pulumi.Bool(config.EnableGrafana),
+						"enabled":        pulumi.Bool(config.EnableGrafana),
 						"in_cluster_url": pulumi.String("http://grafana.istio-system.svc.cluster.local:3000"),
 					},
 					"tracing": pulumi.Map{

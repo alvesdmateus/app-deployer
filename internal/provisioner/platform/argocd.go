@@ -89,7 +89,7 @@ func InstallArgoCD(ctx *pulumi.Context, provider *kubernetes.Provider, config Ar
 				"server.insecure": pulumi.Bool(true), // Disable TLS for internal use (Istio handles TLS)
 			},
 			"cm": pulumi.Map{
-				"exec.enabled": pulumi.Bool(true),
+				"exec.enabled":  pulumi.Bool(true),
 				"admin.enabled": pulumi.Bool(true),
 			},
 		},

@@ -8,33 +8,33 @@ import (
 // Metrics holds all Prometheus metrics for the application
 type Metrics struct {
 	// Deployment metrics
-	DeploymentsTotal     *prometheus.CounterVec
-	DeploymentsActive    prometheus.Gauge
-	DeploymentDuration   *prometheus.HistogramVec
-	DeploymentsByStatus  *prometheus.GaugeVec
+	DeploymentsTotal    *prometheus.CounterVec
+	DeploymentsActive   prometheus.Gauge
+	DeploymentDuration  *prometheus.HistogramVec
+	DeploymentsByStatus *prometheus.GaugeVec
 
 	// Build metrics
-	BuildsTotal       *prometheus.CounterVec
-	BuildDuration     *prometheus.HistogramVec
-	BuildsInProgress  prometheus.Gauge
+	BuildsTotal      *prometheus.CounterVec
+	BuildDuration    *prometheus.HistogramVec
+	BuildsInProgress prometheus.Gauge
 
 	// Infrastructure metrics
 	ProvisioningTotal    *prometheus.CounterVec
 	ProvisioningDuration *prometheus.HistogramVec
 
 	// API metrics
-	HTTPRequestsTotal   *prometheus.CounterVec
-	HTTPRequestDuration *prometheus.HistogramVec
+	HTTPRequestsTotal    *prometheus.CounterVec
+	HTTPRequestDuration  *prometheus.HistogramVec
 	HTTPRequestsInFlight prometheus.Gauge
 
 	// Queue metrics
-	QueueDepth     *prometheus.GaugeVec
-	QueueLatency   *prometheus.HistogramVec
-	WorkersActive  prometheus.Gauge
+	QueueDepth    *prometheus.GaugeVec
+	QueueLatency  *prometheus.HistogramVec
+	WorkersActive prometheus.Gauge
 
 	// Scanner metrics
-	ScanTotal         *prometheus.CounterVec
-	ScanDuration      *prometheus.HistogramVec
+	ScanTotal            *prometheus.CounterVec
+	ScanDuration         *prometheus.HistogramVec
 	VulnerabilitiesFound *prometheus.GaugeVec
 }
 

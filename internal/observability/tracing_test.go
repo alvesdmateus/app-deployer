@@ -235,7 +235,7 @@ func TestSamplerConfiguration(t *testing.T) {
 		{"always sample", 1.0},
 		{"never sample", 0.0},
 		{"50% sample", 0.5},
-		{"above 100%", 1.5},  // Should clamp to always sample
+		{"above 100%", 1.5},     // Should clamp to always sample
 		{"negative rate", -0.5}, // Should clamp to never sample
 	}
 

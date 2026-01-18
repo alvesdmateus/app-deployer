@@ -93,16 +93,16 @@ func NewPlatformProvisioner(config PlatformConfig) *PlatformProvisioner {
 
 // PlatformResult holds the result of platform provisioning
 type PlatformResult struct {
-	IstioInstalled   bool
-	ArgoCDInstalled  bool
-	IstioNamespace   string
-	ArgoCDNamespace  string
-	ArgoCDServerURL  string
-	KialiURL         string
-	JaegerURL        string
-	GrafanaURL       string
-	PrometheusURL    string
-	Duration         time.Duration
+	IstioInstalled  bool
+	ArgoCDInstalled bool
+	IstioNamespace  string
+	ArgoCDNamespace string
+	ArgoCDServerURL string
+	KialiURL        string
+	JaegerURL       string
+	GrafanaURL      string
+	PrometheusURL   string
+	Duration        time.Duration
 }
 
 // Provision provisions the complete platform
