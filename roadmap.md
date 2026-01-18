@@ -323,17 +323,27 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 **Files**: `internal/cost/estimator.go`, `internal/cost/tracker.go`
 
 #### 3.3 Advanced Deployment Strategies (Week 12-13)
+- [x] Istio service mesh foundation deployed
+  - Traffic management with VirtualService and DestinationRule
+  - mTLS enabled for secure service-to-service communication
 - [ ] Implement canary deployments
-  - Traffic splitting with Istio or nginx-ingress
+  - Traffic splitting with Istio (foundation ready)
   - Automated rollback on metrics threshold
 - [ ] Implement A/B testing support
 - [ ] Add deployment scheduling
 - [ ] Implement maintenance windows
 - [ ] Add deployment approvals workflow
 
-**Files**: `internal/deployer/canary.go`, `internal/deployer/strategies/`
+**Files**: `internal/deployer/canary.go`, `internal/deployer/strategies/`, `deployments/kubernetes/base/istio.yaml`
 
 #### 3.4 GitOps Integration (Week 13)
+- [x] ArgoCD installation via Pulumi Helm provider
+  - HA mode support
+  - Metrics and notifications enabled
+  - Integrated with Istio service mesh
+- [x] App-of-apps pattern for self-managing deployments
+- [x] ApplicationSet for dynamic user deployment generation
+- [x] ArgoCD project with RBAC and sync windows
 - [ ] Implement webhook receiver for Git events
 - [ ] Auto-deploy on push to main branch
 - [ ] Deploy preview environments for PRs
@@ -341,7 +351,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 - [ ] Implement deployment status checks
 - [ ] Add GitHub Actions integration
 
-**Files**: `internal/gitops/webhook.go`, `internal/gitops/github.go`
+**Files**: `internal/gitops/webhook.go`, `internal/gitops/github.go`, `internal/provisioner/platform/argocd.go`, `deployments/argocd/`
 
 #### 3.5 CLI Tool (Week 13-14)
 - [ ] Create CLI for platform management
@@ -357,11 +367,24 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 **Files**: `cmd/cli/main.go`, `internal/cli/`
 
 #### 3.6 Self-Hosting (Week 14)
-- [ ] Create Kubernetes manifests for platform components
-  - API deployment
-  - Worker deployment
-  - PostgreSQL StatefulSet
-  - Redis deployment
+- [x] Create Kubernetes manifests for platform components
+  - API deployment with Istio sidecar
+  - Worker deployment with Istio sidecar
+  - ConfigMaps and Secrets
+  - RBAC (ServiceAccount, ClusterRole, ClusterRoleBinding)
+- [x] Kustomize-based deployment with overlays
+  - Base manifests with Istio integration
+  - Dev overlay (single replica, lower resources)
+  - Prod overlay (HPA, PDB, higher resources)
+- [x] Istio service mesh integration
+  - Gateway and VirtualService for ingress
+  - DestinationRule with circuit breaker
+  - mTLS with PeerAuthentication
+  - AuthorizationPolicy for traffic control
+- [x] Pulumi platform provisioner
+  - Istio installation (base, istiod, ingress gateway)
+  - Observability stack (Kiali, Jaeger, Prometheus, Grafana)
+  - ArgoCD installation with HA support
 - [ ] Create Helm chart for platform installation
 - [ ] Write installation documentation
 - [ ] Add upgrade procedures
@@ -370,7 +393,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - k3s, microk8s
   - OpenShift
 
-**Files**: `deployments/kubernetes/`, `deployments/helm/app-deployer/`
+**Files**: `deployments/kubernetes/`, `deployments/helm/app-deployer/`, `internal/provisioner/platform/`
 
 #### 3.7 Testing & Documentation (Week 14)
 - [ ] Achieve 80%+ code coverage
@@ -468,8 +491,8 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
 | **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (90%)** |
-| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (50%)** |
-| **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
+| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (60%)** |
+| **Phase 3** | Week 11-14 | Production-ready, multi-tenant | 🔄 **In Progress (30%)** |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
 
 ### Current Status Details (Phase 1)
@@ -546,7 +569,33 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 
 **Recent Feature Branches:**
 - `feature/jwt-auth` - Security features (JWT, rate limiting, Trivy scanning)
-- `feature/observability` - Prometheus metrics, Grafana dashboards
+- `feature/observability` - Prometheus metrics, Grafana dashboards, OpenTelemetry tracing, Istio/ArgoCD platform
+
+### Current Status Details (Phase 3)
+
+**✅ Completed:**
+- 3.3 Advanced Deployment Strategies (20%)
+  - Istio service mesh foundation with traffic management
+  - mTLS and security policies
+- 3.4 GitOps Integration (40%)
+  - ArgoCD installation via Pulumi
+  - App-of-apps pattern
+  - ApplicationSet for dynamic deployments
+  - Project RBAC and sync windows
+- 3.6 Self-Hosting (60%)
+  - Kubernetes manifests with Kustomize overlays
+  - Istio integration (Gateway, VirtualService, mTLS)
+  - Pulumi platform provisioner for Istio + ArgoCD
+  - Dev/Prod environment configurations
+
+**🔄 In Progress:**
+- Helm chart for easy platform installation
+- Installation documentation
+
+**⏳ Next Up:**
+- 3.1 Multi-Tenancy
+- 3.2 Cost Optimization
+- 3.5 CLI Tool
 
 ---
 
