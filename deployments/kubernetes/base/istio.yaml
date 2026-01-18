@@ -1,0 +1,130 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: app-deployer-gateway
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "app-deployer.local"
+        - "*.app-deployer.local"
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: app-deployer-tls
+      hosts:
+        - "app-deployer.local"
+        - "*.app-deployer.local"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: app-deployer-api
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/component: api
+spec:
+  hosts:
+    - "app-deployer.local"
+    - "api.app-deployer.local"
+  gateways:
+    - app-deployer-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/
+        - uri:
+            prefix: /health
+        - uri:
+            exact: /metrics
+      route:
+        - destination:
+            host: app-deployer-api.app-deployer.svc.cluster.local
+            port:
+              number: 80
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: 5xx,reset,connect-failure,retriable-4xx
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: app-deployer-api
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/component: api
+spec:
+  host: app-deployer-api.app-deployer.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: app-deployer
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: app-deployer-api
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: app-deployer
+      app.kubernetes.io/component: api
+  action: ALLOW
+  rules:
+    # Allow traffic from Istio ingress gateway
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+    # Allow traffic from within the namespace
+    - from:
+        - source:
+            namespaces:
+              - "app-deployer"
+    # Allow health checks from anywhere
+    - to:
+        - operation:
+            paths:
+              - "/health/*"
+              - "/metrics"

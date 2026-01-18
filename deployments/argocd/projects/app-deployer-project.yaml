@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: app-deployer
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: App Deployer Platform Project
+
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/alvesdmateus/app-deployer.git'
+    - 'https://charts.helm.sh/stable'
+    - 'https://prometheus-community.github.io/helm-charts'
+    - 'https://grafana.github.io/helm-charts'
+
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: app-deployer
+      server: https://kubernetes.default.svc
+    - namespace: app-deployer-dev
+      server: https://kubernetes.default.svc
+    - namespace: istio-system
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+
+  # Namespace resource blacklist (deny creating certain resources)
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
+
+  # Roles for project members
+  roles:
+    - name: admin
+      description: Full access to app-deployer project
+      policies:
+        - p, proj:app-deployer:admin, applications, *, app-deployer/*, allow
+        - p, proj:app-deployer:admin, clusters, get, *, allow
+        - p, proj:app-deployer:admin, repositories, *, *, allow
+      groups:
+        - app-deployer-admins
+
+    - name: developer
+      description: Read-only access with sync permissions
+      policies:
+        - p, proj:app-deployer:developer, applications, get, app-deployer/*, allow
+        - p, proj:app-deployer:developer, applications, sync, app-deployer/*, allow
+        - p, proj:app-deployer:developer, logs, get, app-deployer/*, allow
+      groups:
+        - app-deployer-developers
+
+    - name: viewer
+      description: Read-only access
+      policies:
+        - p, proj:app-deployer:viewer, applications, get, app-deployer/*, allow
+        - p, proj:app-deployer:viewer, logs, get, app-deployer/*, allow
+      groups:
+        - app-deployer-viewers
+
+  # Sync windows for production deployments
+  syncWindows:
+    - kind: allow
+      schedule: '0 6-22 * * 1-5'  # Allow Mon-Fri 6am-10pm
+      duration: 16h
+      applications:
+        - app-deployer-prod
+      namespaces:
+        - app-deployer
+    - kind: deny
+      schedule: '0 22 * * 5'  # Deny Friday 10pm onwards
+      duration: 60h
+      applications:
+        - app-deployer-prod

@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-deployer-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/environment: production
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: app-deployer-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: app-deployer-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: app-deployer-alerts
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: app-deployer
+
+  source:
+    repoURL: https://github.com/alvesdmateus/app-deployer.git
+    targetRevision: main
+    path: deployments/kubernetes/overlays/prod
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-deployer
+
+  syncPolicy:
+    # Manual sync for production - require explicit approval
+    automated: null
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - Validate=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+
+  # Health checks and rollback
+  revisionHistoryLimit: 10
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/minReplicas
+        - /spec/maxReplicas
+
+  info:
+    - name: Environment
+      value: Production
+    - name: Team
+      value: Platform
+    - name: On-Call
+      value: platform-oncall@example.com

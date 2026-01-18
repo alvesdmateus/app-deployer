@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: app-deployer-argocd
+
+resources:
+  - projects/app-deployer-project.yaml
+  - apps/app-deployer-dev.yaml
+  - apps/app-deployer-prod.yaml
+  - apps/user-apps-appset.yaml

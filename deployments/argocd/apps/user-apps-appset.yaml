@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: user-deployments
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/component: user-apps
+spec:
+  generators:
+    # Generate applications from Git directories
+    - git:
+        repoURL: https://github.com/alvesdmateus/app-deployer.git
+        revision: main
+        directories:
+          - path: 'user-deployments/*'
+        template:
+          metadata: {}
+          spec:
+            project: app-deployer
+            source:
+              repoURL: https://github.com/alvesdmateus/app-deployer.git
+              targetRevision: main
+              path: '{{path}}'
+            destination: {}
+
+    # Can also use ConfigMap generator for API-driven deployments
+    - plugin:
+        configMapRef:
+          name: user-deployments-generator
+        input:
+          parameters:
+            # This will be populated by the app-deployer API
+            deployments: "[]"
+
+  template:
+    metadata:
+      name: 'user-{{name}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: '{{name}}'
+        app.kubernetes.io/managed-by: app-deployer
+        deployment-id: '{{deployment_id}}'
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-succeeded.webhook: app-deployer-webhook
+        notifications.argoproj.io/subscribe.on-sync-failed.webhook: app-deployer-webhook
+    spec:
+      project: app-deployer
+      source:
+        repoURL: '{{repo_url}}'
+        targetRevision: '{{revision}}'
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+
+  # Preserve unknown fields for custom resources
+  preservedFields:
+    annotations:
+      - deployment-id
+
+  # Sync windows inherited from project
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - development
+        - matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - staging
+        - matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - production

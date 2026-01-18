@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-deployer-config
+  namespace: app-deployer
+  labels:
+    app.kubernetes.io/name: app-deployer
+    app.kubernetes.io/component: api
+data:
+  config.yaml: |
+    server:
+      port: "3000"
+      read_timeout: 30s
+      write_timeout: 30s
+      log_level: info
+
+    platform:
+      default_cloud: gcp
+      default_region: us-central1
+
+    registry:
+      type: artifact-registry
+      location: us-central1
+
+    deployer:
+      default_replicas: 2
+      default_port: 8080
+      helm_timeout: 5m
+      pod_timeout: 5m
+
+    worker:
+      concurrency: 3
+      poll_interval: 5s
+
+    tracing:
+      enabled: true
+      service_name: app-deployer
+      service_version: "1.0.0"
+      environment: production
+      otlp_endpoint: jaeger-collector.istio-system.svc.cluster.local:4318
+      sample_rate: 1.0
+      insecure: true

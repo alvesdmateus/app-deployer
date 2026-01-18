@@ -1,0 +1,87 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: app-deployer-dev
+
+namespace: app-deployer-dev
+
+resources:
+  - ../../base
+
+nameSuffix: ""
+
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: development
+
+patches:
+  # Reduce replicas for dev environment
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app-deployer-api
+      spec:
+        replicas: 1
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app-deployer-worker
+      spec:
+        replicas: 1
+  # Use lower resource limits
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app-deployer-api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: api
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 128Mi
+                  limits:
+                    cpu: 200m
+                    memory: 256Mi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app-deployer-worker
+      spec:
+        template:
+          spec:
+            containers:
+              - name: worker
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 256Mi
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+
+configMapGenerator:
+  - name: app-deployer-config
+    behavior: merge
+    literals:
+      - |
+        config.yaml=
+        server:
+          log_level: debug
+        tracing:
+          enabled: true
+          environment: development
+          sample_rate: 1.0
+
+images:
+  - name: app-deployer
+    newName: gcr.io/YOUR_PROJECT/app-deployer
+    newTag: dev
