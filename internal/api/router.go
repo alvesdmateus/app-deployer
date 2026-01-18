@@ -32,6 +32,7 @@ type Server struct {
 	analyzerHandler       *AnalyzerHandler
 	builderHandler        *BuilderHandler
 	metrics               *observability.Metrics
+	tracer                *observability.Tracer
 }
 
 // NewServer creates a new API server
@@ -90,6 +91,9 @@ func NewServer(db *gorm.DB) *Server {
 	// Initialize metrics
 	metrics := observability.NewMetrics("app_deployer")
 
+	// Initialize tracer (uses global tracer, must be initialized at application startup)
+	tracer := observability.GetGlobalTracer()
+
 	s := &Server{
 		router:                chi.NewRouter(),
 		db:                    db,
@@ -101,6 +105,7 @@ func NewServer(db *gorm.DB) *Server {
 		analyzerHandler:       NewAnalyzerHandler(),
 		builderHandler:        NewBuilderHandler(buildService, analyzer),
 		metrics:               metrics,
+		tracer:                tracer,
 	}
 
 	s.setupRoutes()
@@ -137,6 +142,7 @@ func (s *Server) setupRoutes() {
 	// Middleware
 	s.router.Use(middleware.RequestID)
 	s.router.Use(RecoveryMiddleware)
+	s.router.Use(TracingMiddleware(s.tracer)) // Distributed tracing
 	s.router.Use(RequestLogger)
 	s.router.Use(CORSMiddleware())
 	s.router.Use(middleware.RealIP)

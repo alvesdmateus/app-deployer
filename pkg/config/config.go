@@ -18,6 +18,7 @@ type Config struct {
 	Provisioner ProvisionerConfig
 	Deployer    DeployerConfig
 	Worker      WorkerConfig
+	Tracing     TracingConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -83,6 +84,17 @@ type DeployerConfig struct {
 type WorkerConfig struct {
 	Concurrency  int
 	PollInterval time.Duration
+}
+
+// TracingConfig holds distributed tracing configuration
+type TracingConfig struct {
+	Enabled        bool
+	ServiceName    string
+	ServiceVersion string
+	Environment    string
+	OTLPEndpoint   string
+	SampleRate     float64
+	Insecure       bool
 }
 
 // Load loads configuration from environment variables and config files
@@ -156,6 +168,15 @@ func Load() (*Config, error) {
 			Concurrency:  viper.GetInt("worker.concurrency"),
 			PollInterval: viper.GetDuration("worker.poll_interval"),
 		},
+		Tracing: TracingConfig{
+			Enabled:        viper.GetBool("tracing.enabled"),
+			ServiceName:    viper.GetString("tracing.service_name"),
+			ServiceVersion: viper.GetString("tracing.service_version"),
+			Environment:    viper.GetString("tracing.environment"),
+			OTLPEndpoint:   viper.GetString("tracing.otlp_endpoint"),
+			SampleRate:     viper.GetFloat64("tracing.sample_rate"),
+			Insecure:       viper.GetBool("tracing.insecure"),
+		},
 	}
 
 	// Override database config from DATABASE_URL if present
@@ -217,6 +238,15 @@ func setDefaults() {
 	// Worker defaults
 	viper.SetDefault("worker.concurrency", 3)
 	viper.SetDefault("worker.poll_interval", 5*time.Second)
+
+	// Tracing defaults
+	viper.SetDefault("tracing.enabled", false)
+	viper.SetDefault("tracing.service_name", "app-deployer")
+	viper.SetDefault("tracing.service_version", "1.0.0")
+	viper.SetDefault("tracing.environment", "development")
+	viper.SetDefault("tracing.otlp_endpoint", "localhost:4318")
+	viper.SetDefault("tracing.sample_rate", 1.0)
+	viper.SetDefault("tracing.insecure", true)
 }
 
 // GetDatabaseDSN returns the PostgreSQL connection string

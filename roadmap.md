@@ -241,14 +241,18 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - Queue metrics
   - Vulnerability scan metrics
 - [x] Create Grafana dashboards
-- [ ] Implement distributed tracing with OpenTelemetry
+- [x] Implement distributed tracing with OpenTelemetry
+  - OTLP HTTP exporter to Jaeger/collector
+  - HTTP request tracing middleware
+  - Custom span attributes for deployments, builds, infrastructure
+  - Context propagation for distributed traces
 - [x] Add health check endpoints
   - `/health/live` - Liveness probe
   - `/health/ready` - Readiness probe
   - `/metrics` - Prometheus metrics
 - [ ] Set up log aggregation (Loki or ELK)
 
-**Files**: `internal/observability/metrics.go`, `internal/api/metrics_middleware.go`, `deployments/monitoring/`
+**Files**: `internal/observability/metrics.go`, `internal/observability/tracing.go`, `internal/api/metrics_middleware.go`, `internal/api/tracing_middleware.go`, `deployments/monitoring/`
 
 #### 2.4 Rollback & Recovery (Week 9-10)
 - [ ] Store previous deployment versions in state
@@ -464,7 +468,7 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
 |-------|----------|-----------------|--------|
 | **Phase 0** | Week 1-2 | Development environment setup | ✅ **Complete** |
 | **Phase 1** | Week 3-6 | MVP (GCP only, single tenant) | 🔄 **In Progress (90%)** |
-| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (40%)** |
+| **Phase 2** | Week 7-10 | Multi-cloud, security, observability | 🔄 **In Progress (50%)** |
 | **Phase 3** | Week 11-14 | Production-ready, multi-tenant | ⏳ Pending |
 | **Phase 4** | Week 15-20 | Advanced features | ⏳ Pending |
 
@@ -522,17 +526,19 @@ This roadmap breaks down the development of **app-deployer** into manageable pha
   - IP-based rate limiting with token bucket algorithm
   - Trivy vulnerability scanning integration
   - Image scanning before deployment (configurable fail on critical/high)
-- 2.3 Observability (70%)
+- 2.3 Observability (90%)
   - Prometheus metrics for all components
   - HTTP request metrics middleware
   - Grafana dashboard with comprehensive panels
   - Health check endpoints (/health/live, /health/ready, /metrics)
   - Docker Compose for local monitoring stack
+  - OpenTelemetry distributed tracing with OTLP exporter
+  - Jaeger integration for trace visualization
+  - HTTP tracing middleware with context propagation
 
 **🔄 In Progress:**
 - Multi-cloud support (AWS/Azure provisioners)
-- Distributed tracing with OpenTelemetry
-- Log aggregation setup
+- Log aggregation setup (Loki)
 
 **⏳ Next Up:**
 - 2.4 Rollback & Recovery
